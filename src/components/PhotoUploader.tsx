@@ -1,15 +1,14 @@
-import React, { useState, useRef } from 'react';
-import { Upload, Sparkles, AlertCircle, Loader2, X } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Upload, AlertCircle, Loader2, X } from 'lucide-react';
+import { ACCEPTED_IMAGE_TYPES, MAX_UPLOAD_BYTES } from '../lib/brand';
+import { cn } from '../lib/cn';
 
 interface PhotoUploaderProps {
   onPhotoSelected: (url: string | null) => void;
   currentPhoto: string | null;
 }
 
-export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
-  onPhotoSelected,
-  currentPhoto,
-}) => {
+export function PhotoUploader({ onPhotoSelected, currentPhoto }: PhotoUploaderProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -17,13 +16,31 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
 
   const processFile = async (file: File) => {
     setError(null);
-    setLoading(true);
 
+    const name = file.name.toLowerCase();
+    const isHeic = name.endsWith('.heic') || name.endsWith('.heif');
+    const typeOk =
+      ACCEPTED_IMAGE_TYPES.includes(file.type) ||
+      isHeic ||
+      file.type.startsWith('image/');
+
+    if (!typeOk) {
+      setError('Please choose a JPG, PNG, WEBP, or HEIC photo.');
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      setError('Photo is larger than 12 MB. Please use a smaller file.');
+      return;
+    }
+    if (file.size === 0) {
+      setError('That file looks empty. Try another photo.');
+      return;
+    }
+
+    setLoading(true);
     try {
       let finalFile = file;
-
-      const filename = file.name.toLowerCase();
-      if (filename.endsWith('.heic') || filename.endsWith('.heif')) {
+      if (isHeic) {
         try {
           const heic2any = (await import('heic2any')).default;
           const convertedBlob = await heic2any({
@@ -46,12 +63,11 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
         }
       };
       reader.onerror = () => {
-        setError('Failed to read image file. Please try another image.');
+        setError('Could not read that file. Try a JPG or PNG.');
         setLoading(false);
       };
       reader.readAsDataURL(finalFile);
-    } catch (err) {
-      console.error(err);
+    } catch {
       setError('Error processing image. Please try a JPG or PNG file.');
       setLoading(false);
     }
@@ -60,72 +76,82 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      processFile(e.dataTransfer.files[0]);
-    }
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      processFile(e.target.files[0]);
-    }
+    const file = e.dataTransfer.files?.[0];
+    if (file) processFile(file);
   };
 
   return (
     <div className="space-y-3">
       <div
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
         onDragOver={(e) => {
           e.preventDefault();
           setIsDragging(true);
         }}
-        onDragLeave={() => setIsDragging(false)}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setIsDragging(false);
+          }
+        }}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
-        className={`relative group cursor-pointer overflow-hidden rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
+        className={cn(
+          'relative cursor-pointer overflow-hidden rounded-2xl border border-dashed p-6 text-center transition-all duration-200',
           isDragging
-            ? 'border-cyan-500 bg-cyan-500/10 scale-[1.01]'
-            : 'border-white/20 bg-slate-900/50 hover:border-cyan-500/50 hover:bg-slate-900/80'
-        }`}
+            ? 'border-[var(--brass)] bg-[var(--brass)]/8 scale-[1.01]'
+            : 'border-[var(--line-strong)] bg-[var(--ink-2)] hover:border-[var(--brass)]/60'
+        )}
       >
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/png, image/jpeg, image/jpg, image/webp, image/heic, image/heif"
-          onChange={handleFileChange}
+          accept="image/png,image/jpeg,image/jpg,image/webp,image/heic,image/heif,.heic,.heif"
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (file) processFile(file);
+            e.target.value = '';
+          }}
           className="hidden"
         />
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-4 text-cyan-400 space-y-2">
-            <Loader2 className="w-8 h-8 animate-spin" />
-            <p className="text-xs font-medium text-slate-300">Processing photo file...</p>
+          <div className="flex flex-col items-center justify-center gap-2 py-4 text-[var(--brass)]">
+            <Loader2 className="size-7 animate-spin" />
+            <p className="m-0 text-xs text-[var(--stone)]">Preparing photo…</p>
           </div>
         ) : (
-          <div className="flex flex-col items-center justify-center space-y-2">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500/20 to-teal-500/20 border border-white/10 flex items-center justify-center text-cyan-400 group-hover:scale-110 transition-transform shadow-lg">
-              <Upload className="w-5 h-5" />
+          <div className="flex flex-col items-center gap-2.5">
+            <div className="grid size-11 place-items-center rounded-full border border-[var(--line)] text-[var(--brass)]">
+              <Upload className="size-4" />
             </div>
             <div>
-              <p className="font-semibold text-white text-sm">
-                Click to upload attendee photo <span className="text-slate-400 font-normal">or drag & drop</span>
+              <p className="m-0 text-sm font-medium text-[var(--ivory)]">
+                Drop a portrait, or click to browse
               </p>
-              <p className="text-[11px] text-slate-400 mt-0.5">
-                Supports JPG, PNG, WEBP & iPhone HEIC photos
+              <p className="mt-1 m-0 text-[11px] text-[var(--muted)]">
+                JPG, PNG, WEBP, HEIC · up to 12 MB
               </p>
             </div>
-
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-white/5 text-slate-300 border border-white/10">
-              <Sparkles className="w-3 h-3 text-lime-400" /> Instant local processing
-            </span>
           </div>
         )}
       </div>
 
       {currentPhoto && (
-        <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-900 border border-cyan-500/30 text-xs">
-          <div className="flex items-center gap-2.5">
-            <img src={currentPhoto} alt="Loaded photo" className="w-8 h-8 rounded-full object-cover border border-cyan-400" />
-            <span className="text-slate-200 font-semibold">Attendee Photo Loaded</span>
+        <div className="flex items-center justify-between rounded-xl border border-[var(--line)] bg-[var(--ink-2)] px-3 py-2">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <img
+              src={currentPhoto}
+              alt="Uploaded portrait"
+              className="size-8 rounded-full object-cover ring-1 ring-[var(--brass)]/40"
+            />
+            <span className="truncate text-xs text-[var(--ivory)]">Portrait ready</span>
           </div>
           <button
             type="button"
@@ -133,20 +159,23 @@ export const PhotoUploader: React.FC<PhotoUploaderProps> = ({
               e.stopPropagation();
               onPhotoSelected(null);
             }}
-            className="flex items-center gap-1 text-slate-400 hover:text-red-400 transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+            className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-[var(--stone)] transition-colors hover:bg-white/5 hover:text-[var(--danger)]"
           >
-            <X className="w-4 h-4" />
-            <span>Remove</span>
+            <X className="size-3.5" />
+            Remove
           </button>
         </div>
       )}
 
       {error && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
-          <AlertCircle className="w-4 h-4 shrink-0" />
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-3 py-2.5 text-xs text-[var(--danger)]"
+        >
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
     </div>
   );
-};
+}

@@ -1,5 +1,8 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { BadgeData } from '../types';
+import { BRAND } from '../lib/brand';
+import { drawCoverPhoto, fitText, loadImage, waitForFonts } from '../lib/images';
+import { drawLogoMark } from '../lib/drawLogo';
 
 interface FrontCardCanvasProps {
   badgeData: BadgeData;
@@ -15,12 +18,11 @@ function drawQRCode(
   accentColor: string
 ) {
   ctx.save();
-
-  ctx.fillStyle = 'rgba(8, 13, 20, 0.85)';
+  ctx.fillStyle = 'rgba(12, 11, 9, 0.88)';
   ctx.strokeStyle = accentColor;
-  ctx.lineWidth = 1.5;
+  ctx.lineWidth = 1.25;
   ctx.beginPath();
-  ctx.roundRect(x, y, size, size, 8);
+  ctx.roundRect(x, y, size, size, 6);
   ctx.fill();
   ctx.stroke();
 
@@ -32,13 +34,11 @@ function drawQRCode(
   const startY = y + padding;
 
   const getModuleBit = (r: number, c: number) => {
-    if (
-      (r < 7 && c < 7) ||
-      (r < 7 && c >= 14) ||
-      (r >= 14 && c < 7)
-    ) {
-      if (r === 0 || r === 6 || c === 0 || c === 6 || r === 14 || r === 20 || c === 14 || c === 20) return 1;
-      if (r === 1 || r === 5 || c === 1 || c === 5 || r === 15 || r === 19 || c === 15 || c === 19) return 0;
+    if ((r < 7 && c < 7) || (r < 7 && c >= 14) || (r >= 14 && c < 7)) {
+      if (r === 0 || r === 6 || c === 0 || c === 6 || r === 14 || r === 20 || c === 14 || c === 20)
+        return 1;
+      if (r === 1 || r === 5 || c === 1 || c === 5 || r === 15 || r === 19 || c === 15 || c === 19)
+        return 0;
       return 1;
     }
     if (r === 6 || c === 6) return (r + c) % 2 === 0 ? 1 : 0;
@@ -48,34 +48,21 @@ function drawQRCode(
       hash = (hash << 5) - hash + codeText.charCodeAt(i);
       hash |= 0;
     }
-    const val = (r * 31 + c * 17 + Math.abs(hash)) % 100;
-    return val > 45 ? 1 : 0;
+    return (r * 31 + c * 17 + Math.abs(hash)) % 100 > 45 ? 1 : 0;
   };
 
-  ctx.fillStyle = '#ffffff';
+  ctx.fillStyle = BRAND.ivory;
   for (let r = 0; r < modules; r++) {
     for (let c = 0; c < modules; c++) {
       if (getModuleBit(r, c) === 1) {
-        ctx.fillRect(
-          startX + c * cellSize,
-          startY + r * cellSize,
-          cellSize - 0.4,
-          cellSize - 0.4
-        );
+        ctx.fillRect(startX + c * cellSize, startY + r * cellSize, cellSize - 0.4, cellSize - 0.4);
       }
     }
   }
-
-  ctx.fillStyle = accentColor;
-  ctx.fillRect(x + size / 2 - 3, y + size / 2 - 3, 6, 6);
-
   ctx.restore();
 }
 
-export const FrontCardCanvas: React.FC<FrontCardCanvasProps> = ({
-  badgeData,
-  onCanvasReady,
-}) => {
+export function FrontCardCanvas({ badgeData, onCanvasReady }: FrontCardCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -84,236 +71,224 @@ export const FrontCardCanvas: React.FC<FrontCardCanvasProps> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    let cancelled = false;
+
     const width = 450;
     const height = 820;
     canvas.width = width;
     canvas.height = height;
-
-    ctx.clearRect(0, 0, width, height);
-
-    // --- 1. Card Background Fill / Custom Image ---
-    ctx.save();
+    ctx.fillStyle = BRAND.ink;
     ctx.beginPath();
     ctx.roundRect(0, 0, width, height, 24);
-    ctx.clip();
+    ctx.fill();
 
-    const bgAccentColor = '#06b6d4';
+    const render = async () => {
+      try {
+      await waitForFonts();
+      if (cancelled || !canvasRef.current) return;
+      ctx.clearRect(0, 0, width, height);
 
-    if (badgeData.customBgUrl) {
-      const customImg = new Image();
-      customImg.crossOrigin = 'anonymous';
-      customImg.src = badgeData.customBgUrl;
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(0, 0, width, height, 24);
+      ctx.clip();
 
-      if (customImg.complete && customImg.naturalWidth !== 0) {
+      let customImg: HTMLImageElement | null = null;
+      if (badgeData.customBgUrl) {
+        try {
+          customImg = await loadImage(badgeData.customBgUrl);
+        } catch {
+          customImg = null;
+        }
+      }
+      if (cancelled) return;
+
+      if (customImg) {
         ctx.drawImage(customImg, 0, 0, width, height);
+        ctx.fillStyle = 'rgba(12, 11, 9, 0.38)';
+        ctx.fillRect(0, 0, width, height);
       } else {
         const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-        bgGrad.addColorStop(0, '#070c14');
-        bgGrad.addColorStop(0.5, '#0c1626');
-        bgGrad.addColorStop(1, '#050911');
+        bgGrad.addColorStop(0, '#14110d');
+        bgGrad.addColorStop(0.55, '#0c0b09');
+        bgGrad.addColorStop(1, '#16130f');
         ctx.fillStyle = bgGrad;
         ctx.fillRect(0, 0, width, height);
+
+        const glow = ctx.createRadialGradient(width / 2, 360, 20, width / 2, 360, 280);
+        glow.addColorStop(0, 'rgba(196, 164, 106, 0.10)');
+        glow.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow;
+        ctx.fillRect(0, 0, width, height);
       }
-    } else {
-      const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-      bgGrad.addColorStop(0, '#070c14');
-      bgGrad.addColorStop(0.5, '#0c1626');
-      bgGrad.addColorStop(1, '#050911');
-      ctx.fillStyle = bgGrad;
-      ctx.fillRect(0, 0, width, height);
+      ctx.restore();
 
-      const radialGlow = ctx.createRadialGradient(width / 2, 370, 20, width / 2, 370, 260);
-      radialGlow.addColorStop(0, 'rgba(6, 182, 212, 0.18)');
-      radialGlow.addColorStop(1, 'transparent');
-      ctx.fillStyle = radialGlow;
-      ctx.fillRect(0, 0, width, height);
-    }
-    ctx.restore();
-
-    ctx.strokeStyle = bgAccentColor + '44';
-    ctx.lineWidth = 2;
-    ctx.strokeRect(1, 1, width - 2, height - 2);
-
-    // --- 2. Right Accent Neon Lime Bar ---
-    ctx.save();
-    ctx.fillStyle = '#a3e635';
-    ctx.shadowColor = '#a3e635';
-    ctx.shadowBlur = 12;
-    ctx.beginPath();
-    ctx.roundRect(width - 12, 0, 12, height, [0, 24, 24, 0]);
-    ctx.fill();
-    ctx.restore();
-
-    // --- 3. Header Typography ---
-    const leftMargin = 35;
-
-    ctx.font = '900 48px "Space Grotesk", "Syne", sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'left';
-    ctx.fillText('HACKER', leftMargin, 85);
-    ctx.fillText('HOUSE', leftMargin, 132);
-    ctx.fillText('GOA', leftMargin, 179);
-
-    ctx.fillStyle = '#eab308';
-    ctx.fillRect(leftMargin, 202, 4, 16);
-
-    ctx.font = '700 13px "Fira Code", monospace';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-    ctx.fillText('AUTHORIZATION PROTOCOL', leftMargin + 12, 215);
-
-    // --- 4. Circular Photo Area ---
-    const photoCenterX = width / 2 - 5;
-    const photoCenterY = 370;
-    const photoRadius = 110;
-
-    ctx.save();
-    ctx.shadowColor = bgAccentColor;
-    ctx.shadowBlur = 25;
-    ctx.strokeStyle = bgAccentColor;
-    ctx.lineWidth = 3.5;
-    ctx.beginPath();
-    ctx.arc(photoCenterX, photoCenterY, photoRadius + 4, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(photoCenterX, photoCenterY, photoRadius, 0, Math.PI * 2);
-    ctx.clip();
-
-    ctx.fillStyle = '#0b1320';
-    ctx.fillRect(photoCenterX - photoRadius, photoCenterY - photoRadius, photoRadius * 2, photoRadius * 2);
-
-    if (badgeData.photoUrl) {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = badgeData.photoUrl;
-
-      if (img.complete && img.naturalWidth !== 0) {
-        ctx.save();
-        const imgX = photoCenterX + badgeData.offsetX;
-        const imgY = photoCenterY + badgeData.offsetY;
-        ctx.translate(imgX, imgY);
-        ctx.rotate((badgeData.rotation * Math.PI) / 180);
-
-        if (badgeData.filter === 'vivid') {
-          ctx.filter = 'contrast(125%) saturate(140%)';
-        } else if (badgeData.filter === 'cyber') {
-          ctx.filter = 'contrast(130%) hue-rotate(180deg) saturate(150%)';
-        } else if (badgeData.filter === 'vintage') {
-          ctx.filter = 'sepia(40%) contrast(110%) saturate(120%)';
-        } else if (badgeData.filter === 'bw') {
-          ctx.filter = 'grayscale(100%) contrast(140%)';
-        } else {
-          ctx.filter = 'none';
-        }
-
-        const diameter = photoRadius * 2;
-        const imgRatio = img.naturalWidth / img.naturalHeight;
-        let drawW = diameter * badgeData.scale;
-        let drawH = diameter * badgeData.scale;
-
-        if (imgRatio > 1) {
-          drawW = diameter * imgRatio * badgeData.scale;
-        } else {
-          drawH = (diameter / imgRatio) * badgeData.scale;
-        }
-
-        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
-        ctx.restore();
-      }
-    } else {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.strokeStyle = 'rgba(196, 164, 106, 0.35)';
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.arc(photoCenterX, photoCenterY - 18, 36, 0, Math.PI * 2);
+      ctx.roundRect(1.5, 1.5, width - 3, height - 3, 22);
+      ctx.stroke();
+
+      ctx.fillStyle = BRAND.laterite;
+      ctx.fillRect(width - 8, 28, 8, height - 56);
+
+      const left = 36;
+      drawLogoMark(ctx, width - 52, 52, 42, BRAND.brass);
+
+      ctx.fillStyle = BRAND.ivory;
+      ctx.textAlign = 'left';
+      ctx.font = '600 46px "Cormorant Garamond", Georgia, serif';
+      ctx.fillText('Hacker', left, 78);
+      ctx.fillText('House', left, 124);
+      ctx.font = 'italic 500 40px "Cormorant Garamond", Georgia, serif';
+      ctx.fillStyle = BRAND.brass;
+      ctx.fillText('Goa', left, 168);
+
+      ctx.fillStyle = BRAND.brass;
+      ctx.fillRect(left, 190, 28, 1);
+      ctx.font = '500 11px "IBM Plex Mono", monospace';
+      ctx.fillStyle = 'rgba(243, 237, 227, 0.55)';
+      ctx.fillText('BUILDER PASS  ·  2026', left + 36, 195);
+
+      const photoX = width / 2 - 4;
+      const photoY = 360;
+      const photoR = 108;
+
+      ctx.save();
+      ctx.strokeStyle = BRAND.brass;
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.arc(photoX, photoY, photoR + 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(photoX, photoY, photoR, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.fillStyle = '#16130f';
+      ctx.fillRect(photoX - photoR, photoY - photoR, photoR * 2, photoR * 2);
+
+      if (badgeData.photoUrl) {
+        try {
+          const img = await loadImage(badgeData.photoUrl);
+          if (!cancelled) {
+            drawCoverPhoto(
+              ctx,
+              img,
+              photoX,
+              photoY,
+              photoR * 2,
+              badgeData.scale,
+              badgeData.offsetX,
+              badgeData.offsetY,
+              badgeData.rotation,
+              badgeData.filter
+            );
+          }
+        } catch {
+          /* keep placeholder */
+        }
+      } else {
+        ctx.fillStyle = 'rgba(243, 237, 227, 0.12)';
+        ctx.beginPath();
+        ctx.arc(photoX, photoY - 16, 34, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(photoX, photoY + 72, 58, Math.PI, Math.PI * 2);
+        ctx.fill();
+        ctx.font = '500 11px "IBM Plex Mono", monospace';
+        ctx.fillStyle = BRAND.brass;
+        ctx.textAlign = 'center';
+        ctx.fillText('ADD PORTRAIT', photoX, photoY + 40);
+      }
+      ctx.restore();
+      if (cancelled) return;
+
+      const name = (badgeData.name || 'ATTENDEE').trim() || 'ATTENDEE';
+      let nameParts = name.toUpperCase().split(/\s+/).filter(Boolean);
+      if (nameParts.length === 1 && nameParts[0].length > 14) {
+        const token = nameParts[0];
+        const mid = Math.ceil(token.length / 2);
+        nameParts = [token.slice(0, mid), token.slice(mid)];
+      }
+      const nameY = 530;
+      const maxNameW = width - left * 2;
+
+      ctx.fillStyle = BRAND.ivory;
+      ctx.textAlign = 'left';
+      if (nameParts.length >= 2) {
+        const first = nameParts[0];
+        const rest = nameParts.slice(1).join(' ');
+        fitText(ctx, first, maxNameW, 600, 36, 14, '"Cormorant Garamond", Georgia, serif');
+        ctx.fillText(first, left, nameY);
+        fitText(ctx, rest, maxNameW, 600, 36, 14, '"Cormorant Garamond", Georgia, serif');
+        ctx.fillText(rest, left, nameY + 40);
+      } else {
+        fitText(ctx, nameParts[0], maxNameW, 600, 40, 14, '"Cormorant Garamond", Georgia, serif');
+        ctx.fillText(nameParts[0], left, nameY);
+      }
+
+      const roleY = nameParts.length >= 2 ? nameY + 78 : nameY + 44;
+      const role = (badgeData.role || 'RESIDENT').trim() || 'RESIDENT';
+      const team = (badgeData.team || 'HOUSE').trim() || 'HOUSE';
+      const roleText = `${role}  /  ${team}`.toUpperCase();
+
+      ctx.fillStyle = BRAND.laterite;
+      ctx.beginPath();
+      ctx.arc(left + 4, roleY - 4, 3.5, 0, Math.PI * 2);
       ctx.fill();
 
-      ctx.beginPath();
-      ctx.arc(photoCenterX, photoCenterY + 70, 62, Math.PI, Math.PI * 2);
-      ctx.fill();
+      ctx.font = '500 12px "IBM Plex Mono", monospace';
+      ctx.fillStyle = BRAND.brassSoft;
+      ctx.fillText(roleText.slice(0, 36), left + 16, roleY);
 
-      ctx.font = '700 12px "Fira Code", monospace';
-      ctx.fillStyle = bgAccentColor;
+      const id = (badgeData.badgeId || 'HHG-0000-X').trim() || 'HHG-0000-X';
+      const boxY = roleY + 28;
+      ctx.strokeStyle = 'rgba(196, 164, 106, 0.45)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(left, boxY, 176, 34);
+      ctx.font = '500 13px "IBM Plex Mono", monospace';
+      ctx.fillStyle = BRAND.brass;
+      ctx.fillText(id.slice(0, 18), left + 14, boxY + 22);
+
+      const qrSize = 86;
+      const qrX = width - left - qrSize;
+      const qrY = boxY - 48;
+      drawQRCode(
+        ctx,
+        qrX,
+        qrY,
+        qrSize,
+        `https://hackerhousegoa.com/pass/${encodeURIComponent(id)}`,
+        BRAND.brass
+      );
+      ctx.font = '500 8px "IBM Plex Mono", monospace';
+      ctx.fillStyle = 'rgba(243, 237, 227, 0.45)';
       ctx.textAlign = 'center';
-      ctx.fillText('UPLOAD PHOTO', photoCenterX, photoCenterY + 42);
-    }
-    ctx.restore();
+      ctx.fillText('SCAN PASS', qrX + qrSize / 2, qrY + qrSize + 14);
 
-    // --- 5. Cardholder Name ---
-    const nameYStart = 540;
-    const nameParts = (badgeData.name || 'AKSHAT LAKHERA').toUpperCase().split(' ');
+      if (!cancelled) onCanvasReady?.(canvas);
+      } catch (err) {
+        console.warn('Front card render failed', err);
+        if (!cancelled && canvasRef.current) onCanvasReady?.(canvasRef.current);
+      }
+    };
 
-    ctx.font = '800 36px "Space Grotesk", "Plus Jakarta Sans", sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'left';
-
-    if (nameParts.length >= 2) {
-      ctx.fillText(nameParts[0], leftMargin, nameYStart);
-      ctx.fillText(nameParts.slice(1).join(' '), leftMargin, nameYStart + 42);
-    } else {
-      ctx.fillText(nameParts[0], leftMargin, nameYStart);
-    }
-
-    // --- 6. Role / Team Indicator ---
-    const roleY = nameParts.length >= 2 ? nameYStart + 85 : nameYStart + 45;
-
-    ctx.fillStyle = '#a3e635';
-    ctx.beginPath();
-    ctx.arc(leftMargin + 6, roleY - 5, 5, 0, Math.PI * 2);
-    ctx.fill();
-
-    const roleText = `${badgeData.role || 'RESIDENT'} / ${badgeData.team || 'TEAM DOOM'}`.toUpperCase();
-    ctx.font = '700 15px "Fira Code", monospace';
-    ctx.fillStyle = '#a3e635';
-    ctx.fillText(roleText, leftMargin + 20, roleY);
-
-    // --- 7. ID Badge Box ---
-    const badgeBoxY = roleY + 30;
-    const badgeBoxW = 180;
-    const badgeBoxH = 38;
-
-    ctx.fillStyle = bgAccentColor + '18';
-    ctx.strokeStyle = bgAccentColor;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.rect(leftMargin, badgeBoxY, badgeBoxW, badgeBoxH);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.font = '700 15px "Fira Code", monospace';
-    ctx.fillStyle = bgAccentColor;
-    ctx.fillText(badgeData.badgeId || 'HHG-8829-X', leftMargin + 38, badgeBoxY + 24);
-
-    // --- 8. QR CODE AT FRONT ---
-    const qrSize = 90;
-    const qrX = width - leftMargin - qrSize - 10;
-    const qrY = badgeBoxY - 52;
-
-    drawQRCode(
-      ctx,
-      qrX,
-      qrY,
-      qrSize,
-      `https://hackerhousegoa.com/pass/${badgeData.badgeId || 'HHG-8829-X'}`,
-      bgAccentColor
-    );
-
-    ctx.font = '700 9px "Fira Code", monospace';
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-    ctx.textAlign = 'center';
-    ctx.fillText('SCAN PASS', qrX + qrSize / 2, qrY + qrSize + 14);
-
-    if (onCanvasReady) {
-      onCanvasReady(canvas);
-    }
+    void render();
+    return () => {
+      cancelled = true;
+    };
   }, [badgeData, onCanvasReady]);
 
   return (
     <div className="relative flex items-center justify-center p-2">
       <canvas
         ref={canvasRef}
-        className="w-full max-w-[360px] rounded-3xl shadow-2xl shadow-cyan-950/60 border border-cyan-500/30 transition-all duration-300"
+        width={450}
+        height={820}
+        className="aspect-[450/820] h-auto w-full max-w-[280px] rounded-[22px] border border-[var(--line)] shadow-[0_28px_60px_-28px_rgba(0,0,0,0.7)] sm:max-w-[340px]"
       />
     </div>
   );
-};
+}
