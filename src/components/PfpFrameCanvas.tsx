@@ -1,15 +1,15 @@
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import type { BadgeData } from '../types';
+import { BRAND } from '../lib/brand';
+import { drawCoverPhoto, loadImage, waitForFonts } from '../lib/images';
+import { drawLogoMark } from '../lib/drawLogo';
 
 interface PfpFrameCanvasProps {
   badgeData: BadgeData;
   onCanvasReady?: (canvas: HTMLCanvasElement) => void;
 }
 
-export const PfpFrameCanvas: React.FC<PfpFrameCanvasProps> = ({
-  badgeData,
-  onCanvasReady,
-}) => {
+export function PfpFrameCanvas({ badgeData, onCanvasReady }: PfpFrameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -17,160 +17,137 @@ export const PfpFrameCanvas: React.FC<PfpFrameCanvasProps> = ({
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    let cancelled = false;
 
-    // Set high resolution square output canvas (1000 x 1000)
     const size = 1000;
     canvas.width = size;
     canvas.height = size;
-
-    const center = size / 2;
-
-    // Clear canvas
-    ctx.clearRect(0, 0, size, size);
-
-    // --- 1. Background Fill ---
-    ctx.fillStyle = '#070a12';
+    ctx.fillStyle = BRAND.ink;
     ctx.fillRect(0, 0, size, size);
 
-    // --- 2. Ambient Glowing Backdrop ---
-    const ambientGlow = ctx.createRadialGradient(center, center, 100, center, center, 480);
-    ambientGlow.addColorStop(0, '#06b6d444');
-    ambientGlow.addColorStop(0.7, '#a3e63522');
-    ambientGlow.addColorStop(1, 'transparent');
-    ctx.fillStyle = ambientGlow;
-    ctx.fillRect(0, 0, size, size);
+    const render = async () => {
+      try {
+      await waitForFonts();
+      if (cancelled || !canvasRef.current) return;
+      const center = size / 2;
+      ctx.clearRect(0, 0, size, size);
 
-    // --- 3. User Photo Area (Circle Aperture) ---
-    const photoRadius = 380;
+      ctx.fillStyle = BRAND.ink;
+      ctx.fillRect(0, 0, size, size);
 
-    ctx.save();
-    ctx.beginPath();
-    ctx.arc(center, center, photoRadius, 0, Math.PI * 2);
-    ctx.clip();
+      const glow = ctx.createRadialGradient(center, center, 80, center, center, 480);
+      glow.addColorStop(0, 'rgba(196, 164, 106, 0.16)');
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, size, size);
 
-    ctx.fillStyle = '#0f172a';
-    ctx.fillRect(0, 0, size, size);
+      const photoRadius = 372;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(center, center, photoRadius, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.fillStyle = BRAND.inkSoft;
+      ctx.fillRect(0, 0, size, size);
 
-    if (badgeData.photoUrl) {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = badgeData.photoUrl;
-
-      if (img.complete && img.naturalWidth !== 0) {
-        ctx.save();
-        const imgCenterX = center + badgeData.offsetX;
-        const imgCenterY = center + badgeData.offsetY;
-        ctx.translate(imgCenterX, imgCenterY);
-        ctx.rotate((badgeData.rotation * Math.PI) / 180);
-
-        if (badgeData.filter === 'vivid') {
-          ctx.filter = 'contrast(125%) saturate(140%)';
-        } else if (badgeData.filter === 'cyber') {
-          ctx.filter = 'contrast(130%) hue-rotate(180deg) saturate(150%)';
-        } else if (badgeData.filter === 'vintage') {
-          ctx.filter = 'sepia(40%) contrast(110%) saturate(120%)';
-        } else if (badgeData.filter === 'bw') {
-          ctx.filter = 'grayscale(100%) contrast(140%)';
-        } else {
-          ctx.filter = 'none';
+      if (badgeData.photoUrl) {
+        try {
+          const img = await loadImage(badgeData.photoUrl);
+          if (!cancelled) {
+            drawCoverPhoto(
+              ctx,
+              img,
+              center,
+              center,
+              photoRadius * 2,
+              badgeData.scale,
+              badgeData.offsetX,
+              badgeData.offsetY,
+              badgeData.rotation,
+              badgeData.filter
+            );
+          }
+        } catch {
+          /* placeholder remains */
         }
-
-        const diameter = photoRadius * 2;
-        const imgRatio = img.naturalWidth / img.naturalHeight;
-        let drawW = diameter * badgeData.scale;
-        let drawH = diameter * badgeData.scale;
-
-        if (imgRatio > 1) {
-          drawW = diameter * imgRatio * badgeData.scale;
-        } else {
-          drawH = (diameter / imgRatio) * badgeData.scale;
-        }
-
-        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
-        ctx.restore();
+      } else {
+        ctx.fillStyle = 'rgba(243, 237, 227, 0.1)';
+        ctx.beginPath();
+        ctx.arc(center, center - 40, 90, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(center, center + 160, 160, Math.PI, Math.PI * 2);
+        ctx.fill();
       }
-    }
-    ctx.restore();
+      ctx.restore();
+      if (cancelled) return;
 
-    // --- 4. Outer PFP Frame Overlay & Rings ---
-    const ringGrad = ctx.createConicGradient(0, center, center);
-    ringGrad.addColorStop(0, '#06b6d4');
-    ringGrad.addColorStop(0.33, '#a3e635');
-    ringGrad.addColorStop(0.66, '#eab308');
-    ringGrad.addColorStop(1, '#06b6d4');
+      ctx.strokeStyle = BRAND.brass;
+      ctx.lineWidth = 14;
+      ctx.beginPath();
+      ctx.arc(center, center, photoRadius + 10, 0, Math.PI * 2);
+      ctx.stroke();
 
-    ctx.save();
-    ctx.strokeStyle = ringGrad;
-    ctx.lineWidth = 18;
-    ctx.shadowColor = '#06b6d4';
-    ctx.shadowBlur = 25;
-    ctx.beginPath();
-    ctx.arc(center, center, photoRadius + 9, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.restore();
+      ctx.strokeStyle = 'rgba(243, 237, 227, 0.28)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(center, center, photoRadius - 2, 0, Math.PI * 2);
+      ctx.stroke();
 
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.arc(center, center, photoRadius - 2, 0, Math.PI * 2);
-    ctx.stroke();
+      const topW = 420;
+      const topH = 56;
+      const topX = center - topW / 2;
+      const topY = center - photoRadius - 18;
+      ctx.fillStyle = BRAND.ink;
+      ctx.strokeStyle = BRAND.brass;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.roundRect(topX, topY, topW, topH, 28);
+      ctx.fill();
+      ctx.stroke();
+      ctx.font = '600 26px "Cormorant Garamond", Georgia, serif';
+      ctx.fillStyle = BRAND.ivory;
+      ctx.textAlign = 'center';
+      ctx.fillText('Hacker House Goa', center, topY + 37);
 
-    // --- 5. Branding Badges around the Frame ---
-    ctx.save();
-    const topBadgeW = 380;
-    const topBadgeH = 54;
-    const topBadgeX = center - topBadgeW / 2;
-    const topBadgeY = center - photoRadius - 25;
+      const role = (badgeData.role || 'RESIDENT').toUpperCase();
+      const team = (badgeData.team || 'HOUSE').toUpperCase();
+      const btmW = 500;
+      const btmH = 58;
+      const btmX = center - btmW / 2;
+      const btmY = center + photoRadius - 32;
+      ctx.fillStyle = BRAND.ink;
+      ctx.strokeStyle = 'rgba(184, 92, 56, 0.7)';
+      ctx.beginPath();
+      ctx.roundRect(btmX, btmY, btmW, btmH, 29);
+      ctx.fill();
+      ctx.stroke();
+      ctx.font = '500 20px "IBM Plex Mono", monospace';
+      ctx.fillStyle = BRAND.brassSoft;
+      ctx.fillText(`${role}  ·  ${team}`.slice(0, 42), center, btmY + 37);
 
-    ctx.fillStyle = '#080d14';
-    ctx.strokeStyle = '#06b6d4';
-    ctx.lineWidth = 3;
-    ctx.shadowColor = '#06b6d4';
-    ctx.shadowBlur = 15;
-    ctx.beginPath();
-    ctx.roundRect(topBadgeX, topBadgeY, topBadgeW, topBadgeH, 27);
-    ctx.fill();
-    ctx.stroke();
+      drawLogoMark(ctx, center, size - 72, 52, BRAND.brass);
 
-    ctx.font = '800 24px "Space Grotesk", sans-serif';
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.fillText('HACKER HOUSE GOA', center, topBadgeY + 36);
-    ctx.restore();
+      if (!cancelled) onCanvasReady?.(canvas);
+      } catch (err) {
+        console.warn('PFP frame render failed', err);
+        if (!cancelled && canvasRef.current) onCanvasReady?.(canvasRef.current);
+      }
+    };
 
-    ctx.save();
-    const btmBadgeW = 460;
-    const btmBadgeH = 60;
-    const btmBadgeX = center - btmBadgeW / 2;
-    const btmBadgeY = center + photoRadius - 35;
-
-    ctx.fillStyle = '#080d14';
-    ctx.strokeStyle = '#a3e635';
-    ctx.lineWidth = 3;
-    ctx.shadowColor = '#a3e635';
-    ctx.shadowBlur = 20;
-    ctx.beginPath();
-    ctx.roundRect(btmBadgeX, btmBadgeY, btmBadgeW, btmBadgeH, 30);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.font = '800 20px "Plus Jakarta Sans", sans-serif';
-    ctx.fillStyle = '#a3e635';
-    ctx.textAlign = 'center';
-    ctx.fillText(`● ${badgeData.role.toUpperCase()} / ${badgeData.team.toUpperCase()}`, center, btmBadgeY + 37);
-    ctx.restore();
-
-    if (onCanvasReady) {
-      onCanvasReady(canvas);
-    }
+    void render();
+    return () => {
+      cancelled = true;
+    };
   }, [badgeData, onCanvasReady]);
 
   return (
     <div className="relative flex items-center justify-center p-2 sm:p-4">
       <canvas
         ref={canvasRef}
-        className="w-full max-w-[400px] rounded-full shadow-2xl shadow-cyan-950/50 border border-white/20 transition-all duration-300 aspect-square"
+        width={1000}
+        height={1000}
+        className="aspect-square h-auto w-full max-w-[280px] rounded-full border border-[var(--line)] shadow-[0_28px_60px_-28px_rgba(0,0,0,0.7)] sm:max-w-[380px]"
       />
     </div>
   );
-};
+}

@@ -236,13 +236,13 @@ function LanyardPhysicsCard({
     <>
       <mesh position={[0, 3.8, 0]}>
         <torusGeometry args={[0.22, 0.05, 16, 32]} />
-        <meshStandardMaterial color="#06b6d4" metalness={0.9} roughness={0.1} />
+        <meshStandardMaterial color="#C4A46A" metalness={0.85} roughness={0.28} />
       </mesh>
 
       <Line
         points={linePoints}
-        color="#06b6d4"
-        lineWidth={8}
+        color="#8A7348"
+        lineWidth={6}
       />
 
       <group
@@ -254,50 +254,46 @@ function LanyardPhysicsCard({
       >
         <mesh position={[0, 1.8, 0]}>
           <boxGeometry args={[0.24, 0.2, 0.08]} />
-          <meshStandardMaterial color="#e2e8f0" metalness={0.95} roughness={0.05} />
+          <meshStandardMaterial color="#E4D2A8" metalness={0.8} roughness={0.25} />
         </mesh>
         <mesh position={[0, 1.92, 0]}>
           <torusGeometry args={[0.12, 0.03, 16, 32]} />
-          <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.1} />
+          <meshStandardMaterial color="#C4A46A" metalness={0.75} roughness={0.3} />
         </mesh>
 
         <mesh position={[0, 0, 0]}>
           <boxGeometry args={[2.3, 3.6, 0.04]} />
 
-          <meshPhysicalMaterial attach="material-0" color="#0a0f14" roughness={0.2} metalness={0.8} />
-          <meshPhysicalMaterial attach="material-1" color="#0a0f14" roughness={0.2} metalness={0.8} />
-          
+          <meshPhysicalMaterial attach="material-0" color="#0C0B09" roughness={0.35} metalness={0.35} />
+          <meshPhysicalMaterial attach="material-1" color="#0C0B09" roughness={0.35} metalness={0.35} />
+
           <meshPhysicalMaterial
             attach="material-2"
-            color="#a3e635"
-            roughness={0.1}
-            metalness={0.9}
-            emissive="#a3e635"
-            emissiveIntensity={0.6}
+            color="#B85C38"
+            roughness={0.35}
+            metalness={0.25}
           />
-          
-          <meshPhysicalMaterial attach="material-3" color="#0a0f14" roughness={0.2} metalness={0.8} />
 
-          {/* Front Face - Color set to #0a0f14 instead of white fallback */}
+          <meshPhysicalMaterial attach="material-3" color="#0C0B09" roughness={0.35} metalness={0.35} />
+
           <meshPhysicalMaterial
             attach="material-4"
             map={frontTexture || undefined}
-            color={frontTexture ? '#ffffff' : '#0a0f14'}
-            clearcoat={1}
-            clearcoatRoughness={0.08}
-            roughness={0.2}
-            metalness={0.15}
+            color={frontTexture ? '#ffffff' : '#0C0B09'}
+            clearcoat={0.25}
+            clearcoatRoughness={0.4}
+            roughness={0.35}
+            metalness={0.08}
           />
 
-          {/* Back Face */}
           <meshPhysicalMaterial
             attach="material-5"
             map={backTexture || undefined}
-            color={backTexture ? '#ffffff' : '#0a0f14'}
-            clearcoat={1}
-            clearcoatRoughness={0.08}
-            roughness={0.2}
-            metalness={0.15}
+            color={backTexture ? '#ffffff' : '#0C0B09'}
+            clearcoat={0.25}
+            clearcoatRoughness={0.4}
+            roughness={0.35}
+            metalness={0.08}
           />
         </mesh>
       </group>
@@ -311,12 +307,12 @@ export const R3FLanyard: React.FC<R3FLanyardProps> = ({
   backCanvas,
 }) => {
   return (
-    <div className="w-full h-[540px] relative rounded-3xl overflow-hidden bg-slate-950/40 border border-white/10 shadow-2xl cursor-grab active:cursor-grabbing select-none">
+    <div className="relative h-[420px] w-full cursor-grab overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--ink-2)] select-none active:cursor-grabbing sm:h-[540px]">
       <Canvas camera={{ position: [0, 0, 9.5], fov: 32 }} dpr={[1, 2]}>
-        <ambientLight intensity={1.8} />
-        <directionalLight position={[10, 10, 12]} intensity={2.2} />
-        <directionalLight position={[-10, -8, -10]} intensity={0.8} color="#06b6d4" />
-        <pointLight position={[0, -2, 4]} intensity={1.2} color="#a3e635" />
+        <ambientLight intensity={1.4} />
+        <directionalLight position={[10, 10, 12]} intensity={1.6} />
+        <directionalLight position={[-8, -6, -8]} intensity={0.45} color="#C4A46A" />
+        <pointLight position={[0, -2, 4]} intensity={0.45} color="#E4D2A8" />
 
         <LanyardPhysicsCard
           badgeData={badgeData}
