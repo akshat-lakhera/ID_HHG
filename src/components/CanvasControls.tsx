@@ -1,16 +1,23 @@
-import React from 'react';
-import { ZoomIn, Move, RotateCw, Sliders, RefreshCw } from 'lucide-react';
+import type { ReactNode } from 'react';
+import { ZoomIn, Move, RotateCw, RefreshCw } from 'lucide-react';
 import type { BadgeData } from '../types';
+import { Panel } from './ui/Panel';
+import { cn } from '../lib/cn';
 
 interface CanvasControlsProps {
   badgeData: BadgeData;
   updateBadgeData: (updates: Partial<BadgeData>) => void;
 }
 
-export const CanvasControls: React.FC<CanvasControlsProps> = ({
-  badgeData,
-  updateBadgeData,
-}) => {
+const FILTERS: { id: BadgeData['filter']; label: string }[] = [
+  { id: 'none', label: 'Natural' },
+  { id: 'vivid', label: 'Warm' },
+  { id: 'cyber', label: 'Cool' },
+  { id: 'vintage', label: 'Film' },
+  { id: 'bw', label: 'Mono' },
+];
+
+export function CanvasControls({ badgeData, updateBadgeData }: CanvasControlsProps) {
   const handleReset = () => {
     updateBadgeData({
       scale: 1,
@@ -21,117 +28,139 @@ export const CanvasControls: React.FC<CanvasControlsProps> = ({
     });
   };
 
-  const filters: { id: BadgeData['filter']; label: string }[] = [
-    { id: 'none', label: 'Original' },
-    { id: 'vivid', label: 'Vivid Sunset' },
-    { id: 'cyber', label: 'Cyberpunk' },
-    { id: 'vintage', label: 'Goa Vintage' },
-    { id: 'bw', label: 'B&W Contrast' },
-  ];
-
   return (
-    <div className="glass-panel rounded-2xl p-4 border border-white/10 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm font-bold text-white">
-          <Sliders className="w-4 h-4 text-cyan-400" />
-          <span>Photo Crop & Position</span>
-        </div>
+    <Panel
+      eyebrow="02"
+      title="Crop & grade"
+      action={
         <button
+          type="button"
           onClick={handleReset}
-          className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs text-[var(--stone)] transition-colors hover:bg-white/5 hover:text-[var(--ivory)]"
         >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Reset</span>
+          <RefreshCw className="size-3.5" />
+          Reset
         </button>
-      </div>
-
-      <div className="space-y-1">
-        <div className="flex justify-between text-xs text-slate-300">
-          <span className="flex items-center gap-1"><ZoomIn className="w-3.5 h-3.5 text-cyan-400" /> Zoom Scale</span>
-          <span className="font-mono text-cyan-400 font-semibold">{Math.round(badgeData.scale * 100)}%</span>
-        </div>
-        <input
-          type="range"
-          min="0.5"
-          max="3"
-          step="0.05"
-          value={badgeData.scale}
-          onChange={(e) => updateBadgeData({ scale: parseFloat(e.target.value) })}
-          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-        />
-      </div>
-
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-slate-300">
-            <span className="flex items-center gap-1"><Move className="w-3.5 h-3.5 text-cyan-400" /> X Offset</span>
-            <span className="font-mono text-cyan-400">{badgeData.offsetX}px</span>
-          </div>
+      }
+    >
+      <div className="space-y-4">
+        <SliderRow
+          icon={<ZoomIn className="size-3.5" />}
+          label="Scale"
+          value={`${Math.round(badgeData.scale * 100)}%`}
+        >
           <input
             type="range"
-            min="-250"
-            max="250"
-            step="1"
-            value={badgeData.offsetX}
-            onChange={(e) => updateBadgeData({ offsetX: parseInt(e.target.value) })}
-            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+            min="0.5"
+            max="3"
+            step="0.05"
+            value={badgeData.scale}
+            aria-label="Photo scale"
+            onChange={(e) => updateBadgeData({ scale: parseFloat(e.target.value) })}
+            className="w-full"
           />
+        </SliderRow>
+
+        <div className="grid grid-cols-2 gap-3">
+          <SliderRow
+            icon={<Move className="size-3.5" />}
+            label="X"
+            value={`${badgeData.offsetX}px`}
+          >
+            <input
+              type="range"
+              min="-250"
+              max="250"
+              step="1"
+              value={badgeData.offsetX}
+              aria-label="Horizontal offset"
+              onChange={(e) => updateBadgeData({ offsetX: parseInt(e.target.value, 10) })}
+              className="w-full"
+            />
+          </SliderRow>
+          <SliderRow
+            icon={<Move className="size-3.5" />}
+            label="Y"
+            value={`${badgeData.offsetY}px`}
+          >
+            <input
+              type="range"
+              min="-250"
+              max="250"
+              step="1"
+              value={badgeData.offsetY}
+              aria-label="Vertical offset"
+              onChange={(e) => updateBadgeData({ offsetY: parseInt(e.target.value, 10) })}
+              className="w-full"
+            />
+          </SliderRow>
         </div>
 
-        <div className="space-y-1">
-          <div className="flex justify-between text-xs text-slate-300">
-            <span className="flex items-center gap-1"><Move className="w-3.5 h-3.5 text-cyan-400" /> Y Offset</span>
-            <span className="font-mono text-cyan-400">{badgeData.offsetY}px</span>
-          </div>
+        <SliderRow
+          icon={<RotateCw className="size-3.5" />}
+          label="Rotate"
+          value={`${badgeData.rotation}°`}
+        >
           <input
             type="range"
-            min="-250"
-            max="250"
+            min="-180"
+            max="180"
             step="1"
-            value={badgeData.offsetY}
-            onChange={(e) => updateBadgeData({ offsetY: parseInt(e.target.value) })}
-            className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+            value={badgeData.rotation}
+            aria-label="Rotation"
+            onChange={(e) => updateBadgeData({ rotation: parseInt(e.target.value, 10) })}
+            className="w-full"
           />
-        </div>
-      </div>
+        </SliderRow>
 
-      <div className="space-y-1">
-        <div className="flex justify-between text-xs text-slate-300">
-          <span className="flex items-center gap-1"><RotateCw className="w-3.5 h-3.5 text-lime-400" /> Rotate</span>
-          <span className="font-mono text-lime-400">{badgeData.rotation}°</span>
+        <div>
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--stone)]">
+            Grade
+          </p>
+          <div className="grid grid-cols-5 gap-1.5">
+            {FILTERS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => updateBadgeData({ filter: f.id })}
+                className={cn(
+                  'rounded-lg px-1 py-1.5 text-[11px] font-medium transition-colors',
+                  badgeData.filter === f.id
+                    ? 'bg-[var(--ivory)] text-[var(--ink)]'
+                    : 'bg-[var(--ink-2)] text-[var(--stone)] hover:text-[var(--ivory)]'
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
-        <input
-          type="range"
-          min="-180"
-          max="180"
-          step="5"
-          value={badgeData.rotation}
-          onChange={(e) => updateBadgeData({ rotation: parseInt(e.target.value) })}
-          className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-lime-500"
-        />
       </div>
+    </Panel>
+  );
+}
 
-      <div>
-        <label className="text-xs font-semibold text-slate-400 block mb-2">
-          Color Grading Filter:
-        </label>
-        <div className="grid grid-cols-5 gap-1.5">
-          {filters.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => updateBadgeData({ filter: f.id })}
-              className={`px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all text-center truncate ${
-                badgeData.filter === f.id
-                  ? 'bg-gradient-to-r from-cyan-500 to-teal-600 text-white shadow'
-                  : 'bg-slate-900/60 text-slate-400 hover:text-white hover:bg-white/5 border border-white/5'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+function SliderRow({
+  icon,
+  label,
+  value,
+  children,
+}: {
+  icon: ReactNode;
+  label: string;
+  value: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-xs text-[var(--stone)]">
+        <span className="inline-flex items-center gap-1.5">
+          {icon}
+          {label}
+        </span>
+        <span className="font-mono text-[var(--brass)]">{value}</span>
       </div>
+      {children}
     </div>
   );
-};
+}

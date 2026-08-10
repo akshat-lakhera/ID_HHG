@@ -1,16 +1,15 @@
-import React, { useState, useRef } from 'react';
-import { FileSpreadsheet, Upload, Download, Check, AlertCircle, Users, ArrowRight } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Upload, Download, Check, AlertCircle, Users, ArrowRight } from 'lucide-react';
 import type { CsvRecord, BadgeData } from '../types';
+import { Panel } from './ui/Panel';
+import { cn } from '../lib/cn';
 
 interface CsvImporterProps {
   onSelectRecord: (record: Partial<BadgeData>) => void;
   onBatchRecordsLoaded: (records: CsvRecord[]) => void;
 }
 
-export const CsvImporter: React.FC<CsvImporterProps> = ({
-  onSelectRecord,
-  onBatchRecordsLoaded,
-}) => {
+export function CsvImporter({ onSelectRecord, onBatchRecordsLoaded }: CsvImporterProps) {
   const [records, setRecords] = useState<CsvRecord[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -18,10 +17,10 @@ export const CsvImporter: React.FC<CsvImporterProps> = ({
 
   const handleDownloadSampleCsv = () => {
     const sampleContent = `name,role,team,badgeId,photoUrl
-Akshat Lakhera,Resident,Team Doom,HHG-8829-X,https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80
-Rohan Sharma,Core Builder,Team Solana,HHG-4912-A,https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80
-Maya Lin,UI Designer,Team ZK,HHG-3120-B,https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=600&q=80
-Devon Vance,AI Specialist,Team Autonomous,HHG-9081-C,https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80`;
+Akshat Lakhera,Resident,Team Doom,HHG-8829-X,
+Rohan Sharma,Core Builder,Team Solana,HHG-4912-A,
+Maya Lin,UI Designer,Team ZK,HHG-3120-B,
+Devon Vance,AI Specialist,Team Autonomous,HHG-9081-C,`;
 
     const blob = new Blob([sampleContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -31,6 +30,7 @@ Devon Vance,AI Specialist,Team Autonomous,HHG-9081-C,https://images.unsplash.com
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   const parseCSV = (text: string): CsvRecord[] => {
@@ -38,140 +38,130 @@ Devon Vance,AI Specialist,Team Autonomous,HHG-9081-C,https://images.unsplash.com
     if (lines.length < 2) return [];
 
     const headers = lines[0].split(',').map((h) => h.trim().toLowerCase().replace(/['"]/g, ''));
-    
     const nameIdx = headers.findIndex((h) => h.includes('name'));
     const roleIdx = headers.findIndex((h) => h.includes('role') || h.includes('stack') || h.includes('title'));
     const teamIdx = headers.findIndex((h) => h.includes('team') || h.includes('dept') || h.includes('group'));
     const idIdx = headers.findIndex((h) => h.includes('id') || h.includes('badge') || h.includes('pass'));
-    const photoIdx = headers.findIndex((h) => h.includes('photo') || h.includes('image') || h.includes('avatar') || h.includes('url'));
+    const photoIdx = headers.findIndex((h) =>
+      h.includes('photo') || h.includes('image') || h.includes('avatar') || h.includes('url')
+    );
 
     const parsed: CsvRecord[] = [];
-
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].split(',').map((c) => c.trim().replace(/^["']|["']$/g, ''));
       if (cols.length === 0 || !cols[0]) continue;
-
-      const record: CsvRecord = {
+      parsed.push({
         name: nameIdx !== -1 && cols[nameIdx] ? cols[nameIdx] : cols[0] || 'Attendee',
         role: roleIdx !== -1 && cols[roleIdx] ? cols[roleIdx] : 'RESIDENT',
         team: teamIdx !== -1 && cols[teamIdx] ? cols[teamIdx] : 'TEAM DOOM',
         badgeId: idIdx !== -1 && cols[idIdx] ? cols[idIdx] : `HHG-${Math.floor(1000 + Math.random() * 9000)}-X`,
         photoUrl: photoIdx !== -1 && cols[photoIdx] ? cols[photoIdx] : undefined,
-      };
-
-      parsed.push(record);
+      });
     }
-
     return parsed;
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      const reader = new FileReader();
-      reader.onload = (evt) => {
-        try {
-          const content = evt.target?.result as string;
-          const parsed = parseCSV(content);
-          if (parsed.length === 0) {
-            setError('CSV file is empty or missing headers (name, role, team, badgeId).');
-            return;
-          }
-          setRecords(parsed);
-          onBatchRecordsLoaded(parsed);
-          setSelectedIndex(0);
-          onSelectRecord(parsed[0]);
-        } catch (err) {
-          setError('Failed to parse CSV file. Ensure it is comma-separated.');
-        }
-      };
-      reader.readAsText(file);
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setError('CSV is larger than 2 MB.');
+      return;
     }
+    const reader = new FileReader();
+    reader.onerror = () => setError('Could not read that file.');
+    reader.onload = (evt) => {
+      try {
+        const parsed = parseCSV((evt.target?.result as string) || '');
+        if (parsed.length === 0) {
+          setError('CSV is empty or missing a name column.');
+          return;
+        }
+        setRecords(parsed);
+        onBatchRecordsLoaded(parsed);
+        setSelectedIndex(0);
+        onSelectRecord(parsed[0]);
+      } catch {
+        setError('Could not parse CSV. Use comma-separated columns.');
+      }
+    };
+    reader.readAsText(file);
   };
 
   return (
-    <div className="glass-panel rounded-2xl p-5 border border-white/10 space-y-4">
-      <div className="flex items-center justify-between border-b border-white/10 pb-3">
-        <div className="flex items-center gap-2">
-          <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
-          <h2 className="text-base font-bold text-white m-0 font-display">
-            CSV Batch Import Engine
-          </h2>
-        </div>
-
+    <Panel
+      eyebrow="04"
+      title="Batch import"
+      action={
         <button
           type="button"
           onClick={handleDownloadSampleCsv}
-          className="flex items-center gap-1 text-xs font-semibold text-cyan-400 hover:text-cyan-300 bg-cyan-500/10 px-2.5 py-1 rounded-lg border border-cyan-500/30 transition-all"
+          className="inline-flex items-center gap-1 text-xs text-[var(--brass)] hover:text-[var(--brass-soft)]"
         >
-          <Download className="w-3.5 h-3.5" />
-          <span>Sample CSV</span>
+          <Download className="size-3.5" />
+          Sample
         </button>
-      </div>
-
-      <div className="flex items-center gap-3">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv, text/csv"
-          onChange={handleFileUpload}
-          className="hidden"
-        />
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          className="flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-md shadow-emerald-500/20 transition-all cursor-pointer"
-        >
-          <Upload className="w-4 h-4" />
-          <span>Upload Attendee CSV File</span>
-        </button>
-      </div>
+      }
+    >
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".csv,text/csv"
+        onChange={handleFileUpload}
+        className="hidden"
+      />
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-[var(--line-strong)] bg-[var(--ink-2)] px-4 py-3 text-sm font-medium text-[var(--ivory)] transition-colors hover:border-[var(--brass)]"
+      >
+        <Upload className="size-4" />
+        Upload CSV
+      </button>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs">
-          <AlertCircle className="w-4 h-4 shrink-0" />
-          <span>{error}</span>
+        <div role="alert" className="mt-3 flex items-start gap-2 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 px-3 py-2 text-xs text-[var(--danger)]">
+          <AlertCircle className="mt-0.5 size-4 shrink-0" />
+          {error}
         </div>
       )}
 
       {records.length > 0 && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-bold text-slate-300">
-            <span className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-pink-400" />
-              <span>Imported ({records.length} Attendees):</span>
-            </span>
-            <span className="text-emerald-400 font-mono text-[11px]">Click row to preview card</span>
-          </div>
-
-          <div className="max-h-52 overflow-y-auto rounded-xl border border-white/10 bg-slate-950/80 divide-y divide-white/5">
+        <div className="mt-4 space-y-2">
+          <p className="m-0 flex items-center gap-1.5 text-xs text-[var(--stone)]">
+            <Users className="size-3.5" />
+            {records.length} attendees
+          </p>
+          <div className="max-h-52 divide-y divide-[var(--line)] overflow-y-auto rounded-xl border border-[var(--line)]">
             {records.map((rec, idx) => (
               <button
-                key={idx}
+                key={`${rec.badgeId}-${idx}`}
                 type="button"
                 onClick={() => {
                   setSelectedIndex(idx);
                   onSelectRecord(rec);
                 }}
-                className={`w-full text-left p-2.5 flex items-center justify-between text-xs transition-colors ${
+                className={cn(
+                  'flex w-full items-center justify-between p-2.5 text-left text-xs transition-colors',
                   selectedIndex === idx
-                    ? 'bg-cyan-500/20 text-white border-l-4 border-cyan-400 font-bold'
-                    : 'text-slate-300 hover:bg-white/5'
-                }`}
+                    ? 'bg-[var(--ivory)]/8 text-[var(--ivory)]'
+                    : 'text-[var(--stone)] hover:bg-white/4 hover:text-[var(--ivory)]'
+                )}
               >
-                <div className="truncate pr-2">
-                  <p className="font-semibold text-white truncate">{rec.name}</p>
-                  <p className="text-[10px] text-slate-400 truncate">
-                    {rec.role} &bull; {rec.team}
+                <div className="min-w-0 pr-2">
+                  <p className="m-0 truncate font-medium text-[var(--ivory)]">{rec.name}</p>
+                  <p className="m-0 truncate text-[10px] text-[var(--muted)]">
+                    {rec.role} · {rec.team}
                   </p>
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-mono text-[10px] text-cyan-400">{rec.badgeId}</span>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className="font-mono text-[10px] text-[var(--brass)]">{rec.badgeId}</span>
                   {selectedIndex === idx ? (
-                    <Check className="w-4 h-4 text-cyan-400" />
+                    <Check className="size-4 text-[var(--brass)]" />
                   ) : (
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
+                    <ArrowRight className="size-3.5 text-[var(--muted)]" />
                   )}
                 </div>
               </button>
@@ -179,6 +169,6 @@ Devon Vance,AI Specialist,Team Autonomous,HHG-9081-C,https://images.unsplash.com
           </div>
         </div>
       )}
-    </div>
+    </Panel>
   );
-};
+}

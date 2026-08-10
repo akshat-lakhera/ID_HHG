@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { X, Copy, Check, Sparkles, ExternalLink, Image as ImageIcon } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { useEffect, useState } from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { Copy, Check, ExternalLink, Image as ImageIcon } from 'lucide-react';
 import { XIcon } from './icons';
+import { Button } from './ui/Button';
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -12,66 +13,58 @@ interface ShareModalProps {
   formatType: string;
 }
 
-export const ShareModal: React.FC<ShareModalProps> = ({
+export function ShareModal({
   isOpen,
   onClose,
   imageUrl,
+  badgeName,
   badgeTitle,
   formatType,
-}) => {
+}: ShareModalProps) {
   const [copiedText, setCopiedText] = useState(false);
   const [copiedImage, setCopiedImage] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
-      confetti({
-        particleCount: 80,
-        spread: 70,
-        origin: { y: 0.6 },
-        colors: ['#ec4899', '#06b6d4', '#f59e0b', '#8b5cf6'],
-      });
+    if (!isOpen) {
+      setCopiedText(false);
+      setCopiedImage(false);
     }
   }, [isOpen]);
 
-  if (!isOpen) return null;
-
-  // Exact handles and hashtags specified by user
-  const tweetText = `Just created my official Hacker House Goa 2026 ${
-    formatType === 'pfp' ? 'PFP Frame' : 'Pass'
-  }! 🌴⚡\nRole: ${badgeTitle || 'RESIDENT'}\n\nSee you at @247pmstudio! 🚀 #HackerHouseGoa #FrameInGoa #HHGoa2026`;
-
-  const xIntentUrl = `https://x.com/intent/post?text=${encodeURIComponent(
-    tweetText
-  )}`;
+  const kind = formatType === 'pfp' ? 'frame' : 'pass';
+  const tweetText = `Just made my official Hacker House Goa 2026 ${kind}.\n${badgeName ? `${badgeName} · ` : ''}${badgeTitle || 'Resident'}\n\nSee you at @247pmstudio\n#HackerHouseGoa #FrameInGoa #HHGoa2026`;
+  const xIntentUrl = `https://x.com/intent/post?text=${encodeURIComponent(tweetText)}`;
 
   const handleNativeShare = async () => {
-    if (!imageUrl) return;
-
-    try {
-      const response = await fetch(imageUrl);
-      const blob = await response.blob();
-      const file = new File([blob], `HH-Goa-2026-${formatType}.png`, { type: 'image/png' });
-
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        await navigator.share({
-          files: [file],
-          title: 'Hacker House Goa 2026 ID Pass',
-          text: tweetText,
-        });
-        return;
+    if (imageUrl) {
+      try {
+        const response = await fetch(imageUrl);
+        const blob = await response.blob();
+        const file = new File([blob], `HH-Goa-2026-${formatType}.png`, { type: 'image/png' });
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({
+            files: [file],
+            title: 'Hacker House Goa 2026',
+            text: tweetText,
+          });
+          return;
+        }
+      } catch (err) {
+        console.warn('Native share fallback to x.com intent:', err);
       }
-    } catch (err) {
-      console.warn('Native share fallback to x.com intent:', err);
     }
-
-    handleCopyImageToClipboard();
-    window.open(xIntentUrl, '_blank');
+    await handleCopyImageToClipboard();
+    window.open(xIntentUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const handleCopyCaption = () => {
-    navigator.clipboard.writeText(tweetText);
-    setCopiedText(true);
-    setTimeout(() => setCopiedText(false), 3000);
+  const handleCopyCaption = async () => {
+    try {
+      await navigator.clipboard.writeText(tweetText);
+      setCopiedText(true);
+      setTimeout(() => setCopiedText(false), 2500);
+    } catch {
+      setCopiedText(false);
+    }
   };
 
   const handleCopyImageToClipboard = async () => {
@@ -79,109 +72,94 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     try {
       const response = await fetch(imageUrl);
       const blob = await response.blob();
-      await navigator.clipboard.write([
-        new ClipboardItem({
-          'image/png': blob,
-        }),
-      ]);
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
       setCopiedImage(true);
-      setTimeout(() => setCopiedImage(false), 3000);
+      setTimeout(() => setCopiedImage(false), 2500);
     } catch (err) {
-      console.warn('Clipboard image copy not supported in browser:', err);
+      console.warn('Clipboard image copy not supported:', err);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn select-none">
-      <div className="relative w-full max-w-lg glass-panel rounded-3xl p-6 border border-white/20 shadow-2xl space-y-5">
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-white p-2 rounded-full hover:bg-white/10 transition-colors"
+    <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-[var(--ink)]/72 backdrop-blur-sm data-[state=open]:animate-[fadeIn_200ms_ease]" />
+        <Dialog.Content
+          className="fixed top-1/2 left-1/2 z-50 w-[min(100%-1.5rem,32rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_40px_80px_-32px_rgba(0,0,0,0.7)] focus:outline-none"
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          <X className="w-5 h-5" />
-        </button>
+          <Dialog.Title className="m-0 font-display text-2xl text-[var(--ivory)]">
+            Your {kind} is ready
+          </Dialog.Title>
+          <Dialog.Description className="mt-1 mb-5 text-sm text-[var(--stone)]">
+            Share with @247pmstudio · #HackerHouseGoa
+          </Dialog.Description>
 
-        <div className="text-center space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-            <Sparkles className="w-3.5 h-3.5" /> High-Resolution Image Ready!
+          {imageUrl && (
+            <div className="mb-5 flex justify-center">
+              <img
+                src={imageUrl}
+                alt="Generated pass preview"
+                className="max-h-56 rounded-xl border border-[var(--line)] object-contain"
+              />
+            </div>
+          )}
+
+          <div className="space-y-3">
+            <Button onClick={handleNativeShare} className="w-full py-3">
+              <XIcon className="size-4" />
+              Open X
+              <ExternalLink className="size-3.5 opacity-60" />
+            </Button>
+            <div className="grid grid-cols-2 gap-2.5">
+              <Button variant="secondary" onClick={handleCopyImageToClipboard} disabled={!imageUrl}>
+                {copiedImage ? (
+                  <>
+                    <Check className="size-4 text-[var(--success)]" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <ImageIcon className="size-4" />
+                    Copy image
+                  </>
+                )}
+              </Button>
+              <Button variant="secondary" onClick={handleCopyCaption}>
+                {copiedText ? (
+                  <>
+                    <Check className="size-4 text-[var(--success)]" />
+                    Copied
+                  </>
+                ) : (
+                  <>
+                    <Copy className="size-4" />
+                    Copy caption
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
-          <h3 className="text-2xl font-extrabold text-white font-display m-0">
-            Share Your Pass on X (Twitter) 🌴
-          </h3>
-          <p className="text-sm text-slate-400">
-            Tagging <span className="text-cyan-400 font-semibold">@247pmstudio</span> & <span className="text-lime-400 font-semibold">#HackerHouseGoa #FrameInGoa #HHGoa2026</span>
+
+          <p className="mt-4 mb-0 text-[11px] leading-relaxed text-[var(--muted)]">
+            On X, click the composer and paste with{' '}
+            <kbd className="rounded border border-[var(--line)] bg-[var(--ink)] px-1.5 py-0.5 font-mono text-[var(--ivory)]">
+              ⌘/Ctrl + V
+            </kbd>{' '}
+            or attach the downloaded PNG.
           </p>
-        </div>
 
-        {imageUrl && (
-          <div className="flex justify-center py-2">
-            <img
-              src={imageUrl}
-              alt="Generated Badge"
-              className="max-h-64 rounded-2xl shadow-xl border border-white/20 object-contain"
-            />
-          </div>
-        )}
-
-        <div className="space-y-3">
-          <button
-            type="button"
-            onClick={handleNativeShare}
-            className="flex items-center justify-center gap-2.5 w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-indigo-600 text-white font-extrabold shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-[1.02] active:scale-[0.98] transition-all text-base cursor-pointer"
-          >
-            <XIcon className="w-5 h-5 fill-current" />
-            <span>Open X.com & Tag @247pmstudio</span>
-            <ExternalLink className="w-4 h-4 ml-1 opacity-70" />
-          </button>
-
-          <div className="grid grid-cols-2 gap-3">
+          <Dialog.Close asChild>
             <button
-              onClick={handleCopyImageToClipboard}
-              className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-slate-900 border border-white/15 text-slate-200 hover:text-white hover:bg-slate-800 text-xs font-semibold transition-all"
+              type="button"
+              aria-label="Close"
+              className="absolute top-4 right-4 grid size-8 place-items-center rounded-full text-[var(--stone)] transition-colors hover:bg-white/5 hover:text-[var(--ivory)]"
             >
-              {copiedImage ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span className="text-emerald-400">Image Copied!</span>
-                </>
-              ) : (
-                <>
-                  <ImageIcon className="w-4 h-4 text-cyan-400" />
-                  <span>Copy Image (Ctrl+V)</span>
-                </>
-              )}
+              ×
             </button>
-
-            <button
-              onClick={handleCopyCaption}
-              className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-slate-900 border border-white/15 text-slate-200 hover:text-white hover:bg-slate-800 text-xs font-semibold transition-all"
-            >
-              {copiedText ? (
-                <>
-                  <Check className="w-4 h-4 text-emerald-400" />
-                  <span className="text-emerald-400">Text Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="w-4 h-4 text-slate-400" />
-                  <span>Copy Tweet Text</span>
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-cyan-500/30 text-xs text-slate-300 space-y-1.5">
-          <p className="font-bold text-cyan-400 flex items-center gap-1.5">
-            💡 How to Attach Image on X:
-          </p>
-          <ol className="list-decimal list-inside space-y-1 text-slate-400">
-            <li>When X opens, click the tweet box.</li>
-            <li>Press <span className="text-white font-mono font-bold bg-white/10 px-1 py-0.5 rounded">Ctrl + V</span> to paste the copied card image directly!</li>
-            <li>Or click the 📷 image icon on X and select the downloaded PNG file.</li>
-          </ol>
-        </div>
-      </div>
-    </div>
+          </Dialog.Close>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
-};
+}
