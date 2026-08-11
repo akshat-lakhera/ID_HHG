@@ -6,6 +6,7 @@ export interface BadgeData {
   name: string;
   role: string;
   team: string;
+  builderTitle?: string;
   badgeId: string;
   photoUrl: string | null;
   cardBgTheme: CardBgTheme;
@@ -21,6 +22,7 @@ export interface CsvRecord {
   name: string;
   role?: string;
   team?: string;
+  builderTitle?: string;
   badgeId?: string;
   photoUrl?: string;
   cardBgTheme?: CardBgTheme;

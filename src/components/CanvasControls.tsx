@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ZoomIn, Move, RotateCw, RefreshCw } from 'lucide-react';
+import { ZoomIn, ArrowLeftRight, ArrowUpDown, RotateCw, RefreshCw } from 'lucide-react';
 import type { BadgeData } from '../types';
 import { Panel } from './ui/Panel';
 import { cn } from '../lib/cn';
@@ -46,7 +46,7 @@ export function CanvasControls({ badgeData, updateBadgeData }: CanvasControlsPro
       <div className="space-y-4">
         <SliderRow
           icon={<ZoomIn className="size-3.5" />}
-          label="Scale"
+          label="Zoom (Scale)"
           value={`${Math.round(badgeData.scale * 100)}%`}
         >
           <input
@@ -55,7 +55,7 @@ export function CanvasControls({ badgeData, updateBadgeData }: CanvasControlsPro
             max="3"
             step="0.05"
             value={badgeData.scale}
-            aria-label="Photo scale"
+            aria-label="Photo zoom scale"
             onChange={(e) => updateBadgeData({ scale: parseFloat(e.target.value) })}
             className="w-full"
           />
@@ -63,9 +63,9 @@ export function CanvasControls({ badgeData, updateBadgeData }: CanvasControlsPro
 
         <div className="grid grid-cols-2 gap-3">
           <SliderRow
-            icon={<Move className="size-3.5" />}
-            label="X"
-            value={`${badgeData.offsetX}px`}
+            icon={<ArrowLeftRight className="size-3.5 text-[var(--brass)]" />}
+            label="Pan X (Left / Right)"
+            value={`${badgeData.offsetX > 0 ? `+${badgeData.offsetX}` : badgeData.offsetX}px`}
           >
             <input
               type="range"
@@ -73,15 +73,16 @@ export function CanvasControls({ badgeData, updateBadgeData }: CanvasControlsPro
               max="250"
               step="1"
               value={badgeData.offsetX}
-              aria-label="Horizontal offset"
+              aria-label="Horizontal position X"
               onChange={(e) => updateBadgeData({ offsetX: parseInt(e.target.value, 10) })}
               className="w-full"
             />
           </SliderRow>
+
           <SliderRow
-            icon={<Move className="size-3.5" />}
-            label="Y"
-            value={`${badgeData.offsetY}px`}
+            icon={<ArrowUpDown className="size-3.5 text-[var(--brass)]" />}
+            label="Pan Y (Up / Down)"
+            value={`${badgeData.offsetY > 0 ? `+${badgeData.offsetY}` : badgeData.offsetY}px`}
           >
             <input
               type="range"
@@ -89,7 +90,7 @@ export function CanvasControls({ badgeData, updateBadgeData }: CanvasControlsPro
               max="250"
               step="1"
               value={badgeData.offsetY}
-              aria-label="Vertical offset"
+              aria-label="Vertical position Y"
               onChange={(e) => updateBadgeData({ offsetY: parseInt(e.target.value, 10) })}
               className="w-full"
             />
@@ -98,7 +99,7 @@ export function CanvasControls({ badgeData, updateBadgeData }: CanvasControlsPro
 
         <SliderRow
           icon={<RotateCw className="size-3.5" />}
-          label="Rotate"
+          label="Rotate angle"
           value={`${badgeData.rotation}°`}
         >
           <input
@@ -107,7 +108,7 @@ export function CanvasControls({ badgeData, updateBadgeData }: CanvasControlsPro
             max="180"
             step="1"
             value={badgeData.rotation}
-            aria-label="Rotation"
+            aria-label="Rotation angle"
             onChange={(e) => updateBadgeData({ rotation: parseInt(e.target.value, 10) })}
             className="w-full"
           />
@@ -115,7 +116,7 @@ export function CanvasControls({ badgeData, updateBadgeData }: CanvasControlsPro
 
         <div>
           <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--stone)]">
-            Grade
+            Color Grade Filter
           </p>
           <div className="grid grid-cols-5 gap-1.5">
             {FILTERS.map((f) => (
@@ -154,7 +155,7 @@ function SliderRow({
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-xs text-[var(--stone)]">
-        <span className="inline-flex items-center gap-1.5">
+        <span className="inline-flex items-center gap-1.5 font-medium">
           {icon}
           {label}
         </span>

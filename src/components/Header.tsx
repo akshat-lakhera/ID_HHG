@@ -22,7 +22,7 @@ export function Header({ format, setFormat }: HeaderProps) {
             <span className="h-3 w-px bg-[var(--line-strong)]" />
             <span className="inline-flex items-center gap-1.5">
               <Calendar className="size-3 text-[var(--brass)]" />
-              13 Aug 2026
+              28 - 31 Oct 2026
             </span>
           </div>
         </div>

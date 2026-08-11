@@ -1,7 +1,8 @@
 import { useRef } from 'react';
-import { User, Code2, Users, CreditCard, Upload, RotateCcw } from 'lucide-react';
+import { User, Code2, Users, CreditCard, Upload, RotateCcw, Sparkles, Dices } from 'lucide-react';
 import type { BadgeData, FormatType } from '../types';
 import { FIELD_LIMITS } from '../lib/brand';
+import { getRandomTitle } from '../data/builderTitles';
 import { Panel } from './ui/Panel';
 import { Field } from './ui/Field';
 import { cn } from '../lib/cn';
@@ -37,6 +38,11 @@ export function CustomizerPanel({
     reader.readAsDataURL(file);
   };
 
+  const handleRollTitle = () => {
+    const title = getRandomTitle();
+    updateBadgeData({ builderTitle: title });
+  };
+
   return (
     <Panel eyebrow="03" title="Details">
       <div className="space-y-4">
@@ -54,11 +60,11 @@ export function CustomizerPanel({
 
         <div className="grid grid-cols-2 gap-3">
           <Field
-            label="Role"
+            label="Role / Stack"
             icon={<Code2 className="size-3.5 text-[var(--brass)]" />}
             value={badgeData.role}
             maxLength={FIELD_LIMITS.role}
-            placeholder="Resident"
+            placeholder="Resident / Fullstack"
             onChange={(e) => updateBadgeData({ role: e.target.value })}
           />
           <Field
@@ -70,6 +76,33 @@ export function CustomizerPanel({
             onChange={(e) => updateBadgeData({ team: e.target.value })}
           />
         </div>
+
+        {showPassFields && (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-medium uppercase tracking-[0.16em] text-[var(--stone)] flex items-center gap-1.5">
+                <Sparkles className="size-3 text-[var(--brass)]" />
+                Generated Builder Title
+              </label>
+              <button
+                type="button"
+                onClick={handleRollTitle}
+                className="flex items-center gap-1 rounded-md bg-[var(--brass)]/10 px-2 py-0.5 text-[10px] font-semibold text-[var(--brass-soft)] hover:bg-[var(--brass)]/20 transition-colors"
+              >
+                <Dices className="size-3" />
+                Roll Random
+              </button>
+            </div>
+            <input
+              type="text"
+              value={badgeData.builderTitle || 'Cyber Palms Architect'}
+              onChange={(e) => updateBadgeData({ builderTitle: e.target.value })}
+              placeholder="e.g. Solana Wave Rider"
+              maxLength={32}
+              className="w-full rounded-xl border border-[var(--line)] bg-[var(--ink-2)] px-3 py-2.5 text-xs text-[var(--ivory)] placeholder:text-[var(--stone)]/60 focus:border-[var(--brass)] focus:outline-none"
+            />
+          </div>
+        )}
 
         {showPassFields && (
           <Field

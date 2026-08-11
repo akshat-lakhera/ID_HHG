@@ -5,13 +5,14 @@ const KEY = 'hhg-pass-v1';
 
 type Persisted = Pick<
   BadgeData,
-  'name' | 'role' | 'team' | 'badgeId' | 'scale' | 'offsetX' | 'offsetY' | 'rotation' | 'filter'
+  'name' | 'role' | 'team' | 'builderTitle' | 'badgeId' | 'scale' | 'offsetX' | 'offsetY' | 'rotation' | 'filter'
 >;
 
 const DEFAULTS: Persisted = {
   name: 'AKSHAT LAKHERA',
   role: 'RESIDENT',
   team: 'TEAM DOOM',
+  builderTitle: 'Cyber Palms Architect',
   badgeId: 'HHG-8829-X',
   scale: 1,
   offsetX: 0,
@@ -31,6 +32,7 @@ export function loadPersistedBadge(): Persisted {
       name: String(parsed.name ?? DEFAULTS.name).slice(0, 36),
       role: String(parsed.role ?? DEFAULTS.role).slice(0, 22),
       team: String(parsed.team ?? DEFAULTS.team).slice(0, 22),
+      builderTitle: String(parsed.builderTitle ?? DEFAULTS.builderTitle).slice(0, 32),
       badgeId: String(parsed.badgeId ?? DEFAULTS.badgeId).slice(0, 18),
       scale: clamp(Number(parsed.scale) || 1, 0.5, 3),
       offsetX: clamp(Number(parsed.offsetX) || 0, -250, 250),
@@ -56,6 +58,7 @@ export function useBadgePersistence(badgeData: BadgeData) {
       name: badgeData.name,
       role: badgeData.role,
       team: badgeData.team,
+      builderTitle: badgeData.builderTitle,
       badgeId: badgeData.badgeId,
       scale: badgeData.scale,
       offsetX: badgeData.offsetX,
@@ -72,6 +75,7 @@ export function useBadgePersistence(badgeData: BadgeData) {
     badgeData.name,
     badgeData.role,
     badgeData.team,
+    badgeData.builderTitle,
     badgeData.badgeId,
     badgeData.scale,
     badgeData.offsetX,
