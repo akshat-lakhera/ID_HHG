@@ -159,7 +159,7 @@ export function App() {
       <div className="grain" />
 
       <div
-        className="pointer-events-none absolute -left-[9999px] top-0 h-px w-px overflow-hidden"
+        className="pointer-events-none fixed -left-[9999px] top-0 opacity-0"
         aria-hidden
         data-export-front={frontCanvas ? 'ready' : 'pending'}
         data-export-back={backCanvas ? 'ready' : 'pending'}

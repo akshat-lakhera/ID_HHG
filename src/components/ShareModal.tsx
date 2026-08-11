@@ -81,12 +81,12 @@ export function ShareModal({
   };
 
   return (
-    <Dialog.Root open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog.Root open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-[var(--ink)]/72 backdrop-blur-sm data-[state=open]:animate-[fadeIn_200ms_ease]" />
         <Dialog.Content
           className="fixed top-1/2 left-1/2 z-50 w-[min(100%-1.5rem,32rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_40px_80px_-32px_rgba(0,0,0,0.7)] focus:outline-none"
-          onOpenAutoFocus={(e) => e.preventDefault()}
+          onOpenAutoFocus={(e: Event) => e.preventDefault()}
         >
           <Dialog.Title className="m-0 font-display text-2xl text-[var(--ivory)]">
             Your {kind} is ready

@@ -20,22 +20,47 @@ function LanyardPhysicsCard({
   badgeData: BadgeData;
 }) {
   const cardGroupRef = useRef<THREE.Group>(null!);
+  const frontMatRef = useRef<THREE.MeshPhysicalMaterial>(null!);
+  const backMatRef = useRef<THREE.MeshPhysicalMaterial>(null!);
 
-  const [frontTexture, setFrontTexture] = useState<THREE.CanvasTexture | null>(null);
-  const [backTexture, setBackTexture] = useState<THREE.CanvasTexture | null>(null);
+  const [frontTexture, setFrontTexture] = useState<THREE.CanvasTexture | null>(() => {
+    if (frontCanvas) {
+      const tex = new THREE.CanvasTexture(frontCanvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.needsUpdate = true;
+      return tex;
+    }
+    return null;
+  });
 
-  // Fallback internal canvas if parent ref is null
-  const internalCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [backTexture, setBackTexture] = useState<THREE.CanvasTexture | null>(() => {
+    if (backCanvas) {
+      const tex = new THREE.CanvasTexture(backCanvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.needsUpdate = true;
+      return tex;
+    }
+    return null;
+  });
 
+  // Re-bind texture when frontCanvas or badgeData updates
   useEffect(() => {
-    const canvasToUse = frontCanvas || internalCanvasRef.current;
-    if (canvasToUse) {
-      const tex = new THREE.CanvasTexture(canvasToUse);
+    if (frontCanvas) {
+      const tex = new THREE.CanvasTexture(frontCanvas);
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.minFilter = THREE.LinearFilter;
       tex.magFilter = THREE.LinearFilter;
       tex.needsUpdate = true;
       setFrontTexture(tex);
+
+      if (frontMatRef.current) {
+        frontMatRef.current.map = tex;
+        frontMatRef.current.needsUpdate = true;
+      }
     }
   }, [
     frontCanvas,
@@ -61,22 +86,43 @@ function LanyardPhysicsCard({
       tex.magFilter = THREE.LinearFilter;
       tex.needsUpdate = true;
       setBackTexture(tex);
+
+      if (backMatRef.current) {
+        backMatRef.current.map = tex;
+        backMatRef.current.needsUpdate = true;
+      }
     }
   }, [backCanvas]);
 
-  // Continuously check and sync texture
+  // Keep textures continuously updated during 3D physics rendering
   useFrame(() => {
-    const targetCanvas = frontCanvas || internalCanvasRef.current;
-    if (targetCanvas) {
-      if (!frontTexture) {
-        const tex = new THREE.CanvasTexture(targetCanvas);
-        tex.colorSpace = THREE.SRGBColorSpace;
-        tex.minFilter = THREE.LinearFilter;
-        tex.magFilter = THREE.LinearFilter;
-        tex.needsUpdate = true;
-        setFrontTexture(tex);
-      } else {
-        frontTexture.needsUpdate = true;
+    if (frontTexture) {
+      frontTexture.needsUpdate = true;
+    } else if (frontCanvas) {
+      const tex = new THREE.CanvasTexture(frontCanvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.needsUpdate = true;
+      setFrontTexture(tex);
+      if (frontMatRef.current) {
+        frontMatRef.current.map = tex;
+        frontMatRef.current.needsUpdate = true;
+      }
+    }
+
+    if (backTexture) {
+      backTexture.needsUpdate = true;
+    } else if (backCanvas) {
+      const tex = new THREE.CanvasTexture(backCanvas);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.minFilter = THREE.LinearFilter;
+      tex.magFilter = THREE.LinearFilter;
+      tex.needsUpdate = true;
+      setBackTexture(tex);
+      if (backMatRef.current) {
+        backMatRef.current.map = tex;
+        backMatRef.current.needsUpdate = true;
       }
     }
   });
@@ -277,9 +323,10 @@ function LanyardPhysicsCard({
           <meshPhysicalMaterial attach="material-3" color="#0C0B09" roughness={0.35} metalness={0.35} />
 
           <meshPhysicalMaterial
+            ref={frontMatRef}
             attach="material-4"
             map={frontTexture || undefined}
-            color={frontTexture ? '#ffffff' : '#0C0B09'}
+            color="#ffffff"
             clearcoat={0.25}
             clearcoatRoughness={0.4}
             roughness={0.35}
@@ -287,9 +334,10 @@ function LanyardPhysicsCard({
           />
 
           <meshPhysicalMaterial
+            ref={backMatRef}
             attach="material-5"
             map={backTexture || undefined}
-            color={backTexture ? '#ffffff' : '#0C0B09'}
+            color="#ffffff"
             clearcoat={0.25}
             clearcoatRoughness={0.4}
             roughness={0.35}
