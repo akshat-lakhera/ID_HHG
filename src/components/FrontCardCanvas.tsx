@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { BadgeData } from '../types';
 import { BRAND } from '../lib/brand';
 import { drawCoverPhoto, fitText, loadImage, waitForFonts } from '../lib/images';
-import { drawLogoMark } from '../lib/drawLogo';
+import hhgLogoUrl from '../assets/hhg_logo.png';
 
 interface FrontCardCanvasProps {
   badgeData: BadgeData;
@@ -84,191 +84,235 @@ export function FrontCardCanvas({ badgeData, onCanvasReady }: FrontCardCanvasPro
 
     const render = async () => {
       try {
-      await waitForFonts();
-      if (cancelled || !canvasRef.current) return;
-      ctx.clearRect(0, 0, width, height);
+        await waitForFonts();
+        if (cancelled || !canvasRef.current) return;
+        ctx.clearRect(0, 0, width, height);
 
-      ctx.save();
-      ctx.beginPath();
-      ctx.roundRect(0, 0, width, height, 24);
-      ctx.clip();
+        ctx.save();
+        ctx.beginPath();
+        ctx.roundRect(0, 0, width, height, 24);
+        ctx.clip();
 
-      let customImg: HTMLImageElement | null = null;
-      if (badgeData.customBgUrl) {
-        try {
-          customImg = await loadImage(badgeData.customBgUrl);
-        } catch {
-          customImg = null;
-        }
-      }
-      if (cancelled) return;
-
-      if (customImg) {
-        ctx.drawImage(customImg, 0, 0, width, height);
-        ctx.fillStyle = 'rgba(12, 11, 9, 0.38)';
-        ctx.fillRect(0, 0, width, height);
-      } else {
-        const bgGrad = ctx.createLinearGradient(0, 0, width, height);
-        bgGrad.addColorStop(0, '#14110d');
-        bgGrad.addColorStop(0.55, '#0c0b09');
-        bgGrad.addColorStop(1, '#16130f');
-        ctx.fillStyle = bgGrad;
-        ctx.fillRect(0, 0, width, height);
-
-        const glow = ctx.createRadialGradient(width / 2, 360, 20, width / 2, 360, 280);
-        glow.addColorStop(0, 'rgba(196, 164, 106, 0.10)');
-        glow.addColorStop(1, 'transparent');
-        ctx.fillStyle = glow;
-        ctx.fillRect(0, 0, width, height);
-      }
-      ctx.restore();
-
-      ctx.strokeStyle = 'rgba(196, 164, 106, 0.35)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(1.5, 1.5, width - 3, height - 3, 22);
-      ctx.stroke();
-
-      ctx.fillStyle = BRAND.laterite;
-      ctx.fillRect(width - 8, 28, 8, height - 56);
-
-      const left = 36;
-      drawLogoMark(ctx, width - 52, 52, 42, BRAND.brass);
-
-      ctx.fillStyle = BRAND.ivory;
-      ctx.textAlign = 'left';
-      ctx.font = '600 46px "Cormorant Garamond", Georgia, serif';
-      ctx.fillText('Hacker', left, 78);
-      ctx.fillText('House', left, 124);
-      ctx.font = 'italic 500 40px "Cormorant Garamond", Georgia, serif';
-      ctx.fillStyle = BRAND.brass;
-      ctx.fillText('Goa', left, 168);
-
-      ctx.fillStyle = BRAND.brass;
-      ctx.fillRect(left, 190, 28, 1);
-      ctx.font = '500 11px "IBM Plex Mono", monospace';
-      ctx.fillStyle = 'rgba(243, 237, 227, 0.55)';
-      ctx.fillText('BUILDER PASS  ·  2026', left + 36, 195);
-
-      const photoX = width / 2 - 4;
-      const photoY = 360;
-      const photoR = 108;
-
-      ctx.save();
-      ctx.strokeStyle = BRAND.brass;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.arc(photoX, photoY, photoR + 6, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(photoX, photoY, photoR, 0, Math.PI * 2);
-      ctx.clip();
-      ctx.fillStyle = '#16130f';
-      ctx.fillRect(photoX - photoR, photoY - photoR, photoR * 2, photoR * 2);
-
-      if (badgeData.photoUrl) {
-        try {
-          const img = await loadImage(badgeData.photoUrl);
-          if (!cancelled) {
-            drawCoverPhoto(
-              ctx,
-              img,
-              photoX,
-              photoY,
-              photoR * 2,
-              badgeData.scale,
-              badgeData.offsetX,
-              badgeData.offsetY,
-              badgeData.rotation,
-              badgeData.filter
-            );
+        let customImg: HTMLImageElement | null = null;
+        if (badgeData.customBgUrl) {
+          try {
+            customImg = await loadImage(badgeData.customBgUrl);
+          } catch {
+            customImg = null;
           }
-        } catch {
-          /* keep placeholder */
         }
-      } else {
-        ctx.fillStyle = 'rgba(243, 237, 227, 0.12)';
+        if (cancelled) return;
+
+        if (customImg) {
+          ctx.drawImage(customImg, 0, 0, width, height);
+          ctx.fillStyle = 'rgba(12, 11, 9, 0.38)';
+          ctx.fillRect(0, 0, width, height);
+        } else {
+          const bgGrad = ctx.createLinearGradient(0, 0, width, height);
+          bgGrad.addColorStop(0, '#14110d');
+          bgGrad.addColorStop(0.55, '#0c0b09');
+          bgGrad.addColorStop(1, '#16130f');
+          ctx.fillStyle = bgGrad;
+          ctx.fillRect(0, 0, width, height);
+
+          const glow = ctx.createRadialGradient(width / 2, 360, 20, width / 2, 360, 280);
+          glow.addColorStop(0, 'rgba(196, 164, 106, 0.10)');
+          glow.addColorStop(1, 'transparent');
+          ctx.fillStyle = glow;
+          ctx.fillRect(0, 0, width, height);
+        }
+        ctx.restore();
+
+        ctx.strokeStyle = 'rgba(196, 164, 106, 0.35)';
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(photoX, photoY - 16, 34, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.beginPath();
-        ctx.arc(photoX, photoY + 72, 58, Math.PI, Math.PI * 2);
-        ctx.fill();
-        ctx.font = '500 11px "IBM Plex Mono", monospace';
+        ctx.roundRect(1.5, 1.5, width - 3, height - 3, 22);
+        ctx.stroke();
+
+        ctx.fillStyle = BRAND.laterite;
+        ctx.fillRect(width - 8, 28, 8, height - 56);
+
+        const left = 36;
+
+        // Load and render OFFICIAL HACKER HOUSE GOA LOGO
+        let hhgLogoImg: HTMLImageElement | null = null;
+        try {
+          hhgLogoImg = await loadImage(hhgLogoUrl);
+        } catch {
+          hhgLogoImg = null;
+        }
+
+        if (hhgLogoImg) {
+          ctx.save();
+          const logoW = 76;
+          const logoH = 48;
+          const logoX = width - left - logoW;
+          const logoY = 32;
+
+          ctx.shadowColor = 'rgba(0,0,0,0.6)';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.roundRect(logoX, logoY, logoW, logoH, 8);
+          ctx.clip();
+          ctx.drawImage(hhgLogoImg, logoX, logoY, logoW, logoH);
+          ctx.restore();
+
+          ctx.strokeStyle = 'rgba(196, 164, 106, 0.5)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(width - left - logoW, 32, logoW, logoH, 8);
+          ctx.stroke();
+        }
+
+        ctx.fillStyle = BRAND.ivory;
+        ctx.textAlign = 'left';
+        ctx.font = '700 44px "Cormorant Garamond", Georgia, serif';
+        ctx.fillStyle = BRAND.ivory;
+        ctx.fillText('HACKER', left, 78);
+        ctx.fillText('HOUSE', left, 124);
+
+        // Official Devanagari "गोवा" in hot pink with yellow outline matching official logo
+        ctx.save();
+        ctx.font = '700 38px "Rozha One", "Yatra One", "Tiro Devanagari Hindi", sans-serif';
+        ctx.strokeStyle = '#FFCC00';
+        ctx.lineWidth = 4;
+        ctx.strokeText('गोवा', left, 168);
+        ctx.fillStyle = '#E6007A';
+        ctx.fillText('गोवा', left, 168);
+        ctx.restore();
+
         ctx.fillStyle = BRAND.brass;
+        ctx.fillRect(left, 190, 28, 1);
+        ctx.font = '500 11px "IBM Plex Mono", monospace';
+        ctx.fillStyle = 'rgba(243, 237, 227, 0.55)';
+        ctx.fillText('BUILDER PASS  ·  28-31 OCT 2026', left + 36, 195);
+
+        const photoX = width / 2 - 4;
+        const photoY = 360;
+        const photoR = 108;
+
+        ctx.save();
+        ctx.strokeStyle = BRAND.brass;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(photoX, photoY, photoR + 6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(photoX, photoY, photoR, 0, Math.PI * 2);
+        ctx.clip();
+        ctx.fillStyle = '#16130f';
+        ctx.fillRect(photoX - photoR, photoY - photoR, photoR * 2, photoR * 2);
+
+        if (badgeData.photoUrl) {
+          try {
+            const img = await loadImage(badgeData.photoUrl);
+            if (!cancelled) {
+              drawCoverPhoto(
+                ctx,
+                img,
+                photoX,
+                photoY,
+                photoR * 2,
+                badgeData.scale,
+                badgeData.offsetX,
+                badgeData.offsetY,
+                badgeData.rotation,
+                badgeData.filter
+              );
+            }
+          } catch {
+            /* keep placeholder */
+          }
+        } else {
+          ctx.fillStyle = 'rgba(243, 237, 227, 0.12)';
+          ctx.beginPath();
+          ctx.arc(photoX, photoY - 16, 34, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(photoX, photoY + 72, 58, Math.PI, Math.PI * 2);
+          ctx.fill();
+          ctx.font = '500 11px "IBM Plex Mono", monospace';
+          ctx.fillStyle = BRAND.brass;
+          ctx.textAlign = 'center';
+          ctx.fillText('ADD PORTRAIT', photoX, photoY + 40);
+        }
+        ctx.restore();
+        if (cancelled) return;
+
+        const name = (badgeData.name || 'ATTENDEE').trim() || 'ATTENDEE';
+        let nameParts = name.toUpperCase().split(/\s+/).filter(Boolean);
+        if (nameParts.length === 1 && nameParts[0].length > 14) {
+          const token = nameParts[0];
+          const mid = Math.ceil(token.length / 2);
+          nameParts = [token.slice(0, mid), token.slice(mid)];
+        }
+        const nameY = 530;
+        const maxNameW = width - left * 2;
+
+        ctx.fillStyle = BRAND.ivory;
+        ctx.textAlign = 'left';
+        if (nameParts.length >= 2) {
+          const first = nameParts[0];
+          const rest = nameParts.slice(1).join(' ');
+          fitText(ctx, first, maxNameW, 600, 36, 14, '"Cormorant Garamond", Georgia, serif');
+          ctx.fillText(first, left, nameY);
+          fitText(ctx, rest, maxNameW, 600, 36, 14, '"Cormorant Garamond", Georgia, serif');
+          ctx.fillText(rest, left, nameY + 40);
+        } else {
+          fitText(ctx, nameParts[0], maxNameW, 600, 40, 14, '"Cormorant Garamond", Georgia, serif');
+          ctx.fillText(nameParts[0], left, nameY);
+        }
+
+        const roleY = nameParts.length >= 2 ? nameY + 74 : nameY + 44;
+        const role = (badgeData.role || 'RESIDENT').trim() || 'RESIDENT';
+        const team = (badgeData.team || 'HOUSE').trim() || 'HOUSE';
+        const builderTitle = badgeData.builderTitle || 'Cyber Palms Architect';
+        const roleText = `${role}  /  ${team}`.toUpperCase();
+
+        ctx.fillStyle = BRAND.laterite;
+        ctx.beginPath();
+        ctx.arc(left + 4, roleY - 4, 3.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = '500 12px "IBM Plex Mono", monospace';
+        ctx.fillStyle = BRAND.brassSoft;
+        ctx.fillText(roleText.slice(0, 36), left + 16, roleY);
+
+        // Generated Builder Title - Prominent & Bold
+        const titleY = roleY + 24;
+        ctx.font = 'italic 600 17px "Cormorant Garamond", Georgia, serif';
+        ctx.fillStyle = BRAND.brassSoft;
+        ctx.fillText(`✨ ${builderTitle}`, left, titleY);
+
+        const id = (badgeData.badgeId || 'HHG-0000-X').trim() || 'HHG-0000-X';
+        const boxY = titleY + 16;
+        ctx.strokeStyle = 'rgba(196, 164, 106, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(left, boxY, 176, 34);
+        ctx.font = '500 13px "IBM Plex Mono", monospace';
+        ctx.fillStyle = BRAND.brass;
+        ctx.fillText(id.slice(0, 18), left + 14, boxY + 22);
+
+        const qrSize = 86;
+        const qrX = width - left - qrSize;
+        const qrY = boxY - 48;
+        drawQRCode(
+          ctx,
+          qrX,
+          qrY,
+          qrSize,
+          `https://hackerhousegoa.com/pass/${encodeURIComponent(id)}`,
+          BRAND.brass
+        );
+        ctx.font = '500 8px "IBM Plex Mono", monospace';
+        ctx.fillStyle = 'rgba(243, 237, 227, 0.45)';
         ctx.textAlign = 'center';
-        ctx.fillText('ADD PORTRAIT', photoX, photoY + 40);
-      }
-      ctx.restore();
-      if (cancelled) return;
+        ctx.fillText('SCAN PASS', qrX + qrSize / 2, qrY + qrSize + 14);
 
-      const name = (badgeData.name || 'ATTENDEE').trim() || 'ATTENDEE';
-      let nameParts = name.toUpperCase().split(/\s+/).filter(Boolean);
-      if (nameParts.length === 1 && nameParts[0].length > 14) {
-        const token = nameParts[0];
-        const mid = Math.ceil(token.length / 2);
-        nameParts = [token.slice(0, mid), token.slice(mid)];
-      }
-      const nameY = 530;
-      const maxNameW = width - left * 2;
-
-      ctx.fillStyle = BRAND.ivory;
-      ctx.textAlign = 'left';
-      if (nameParts.length >= 2) {
-        const first = nameParts[0];
-        const rest = nameParts.slice(1).join(' ');
-        fitText(ctx, first, maxNameW, 600, 36, 14, '"Cormorant Garamond", Georgia, serif');
-        ctx.fillText(first, left, nameY);
-        fitText(ctx, rest, maxNameW, 600, 36, 14, '"Cormorant Garamond", Georgia, serif');
-        ctx.fillText(rest, left, nameY + 40);
-      } else {
-        fitText(ctx, nameParts[0], maxNameW, 600, 40, 14, '"Cormorant Garamond", Georgia, serif');
-        ctx.fillText(nameParts[0], left, nameY);
-      }
-
-      const roleY = nameParts.length >= 2 ? nameY + 78 : nameY + 44;
-      const role = (badgeData.role || 'RESIDENT').trim() || 'RESIDENT';
-      const team = (badgeData.team || 'HOUSE').trim() || 'HOUSE';
-      const roleText = `${role}  /  ${team}`.toUpperCase();
-
-      ctx.fillStyle = BRAND.laterite;
-      ctx.beginPath();
-      ctx.arc(left + 4, roleY - 4, 3.5, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.font = '500 12px "IBM Plex Mono", monospace';
-      ctx.fillStyle = BRAND.brassSoft;
-      ctx.fillText(roleText.slice(0, 36), left + 16, roleY);
-
-      const id = (badgeData.badgeId || 'HHG-0000-X').trim() || 'HHG-0000-X';
-      const boxY = roleY + 28;
-      ctx.strokeStyle = 'rgba(196, 164, 106, 0.45)';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(left, boxY, 176, 34);
-      ctx.font = '500 13px "IBM Plex Mono", monospace';
-      ctx.fillStyle = BRAND.brass;
-      ctx.fillText(id.slice(0, 18), left + 14, boxY + 22);
-
-      const qrSize = 86;
-      const qrX = width - left - qrSize;
-      const qrY = boxY - 48;
-      drawQRCode(
-        ctx,
-        qrX,
-        qrY,
-        qrSize,
-        `https://hackerhousegoa.com/pass/${encodeURIComponent(id)}`,
-        BRAND.brass
-      );
-      ctx.font = '500 8px "IBM Plex Mono", monospace';
-      ctx.fillStyle = 'rgba(243, 237, 227, 0.45)';
-      ctx.textAlign = 'center';
-      ctx.fillText('SCAN PASS', qrX + qrSize / 2, qrY + qrSize + 14);
-
-      if (!cancelled) onCanvasReady?.(canvas);
+        if (!cancelled) onCanvasReady?.(canvas);
       } catch (err) {
         console.warn('Front card render failed', err);
         if (!cancelled && canvasRef.current) onCanvasReady?.(canvasRef.current);

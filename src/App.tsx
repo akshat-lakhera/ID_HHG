@@ -37,6 +37,7 @@ export function App() {
   const [viewMode, setViewMode] = useState<'r3f' | '2d'>('2d');
   const [badgeData, setBadgeData] = useState<BadgeData>({
     ...persisted,
+    builderTitle: persisted.builderTitle || 'Cyber Palms Architect',
     photoUrl: null,
     cardBgTheme: 'cyber',
     customBgUrl: null,
