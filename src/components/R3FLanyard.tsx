@@ -47,7 +47,7 @@ function LanyardPhysicsCard({
     return null;
   });
 
-  // Re-bind texture when frontCanvas or badgeData updates
+  // Re-bind textures ONLY when frontCanvas or badgeData properties change (not on every 60fps frame!)
   useEffect(() => {
     if (frontCanvas) {
       const tex = new THREE.CanvasTexture(frontCanvas);
@@ -93,39 +93,6 @@ function LanyardPhysicsCard({
       }
     }
   }, [backCanvas]);
-
-  // Keep textures continuously updated during 3D physics rendering
-  useFrame(() => {
-    if (frontTexture) {
-      frontTexture.needsUpdate = true;
-    } else if (frontCanvas) {
-      const tex = new THREE.CanvasTexture(frontCanvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.minFilter = THREE.LinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-      tex.needsUpdate = true;
-      setFrontTexture(tex);
-      if (frontMatRef.current) {
-        frontMatRef.current.map = tex;
-        frontMatRef.current.needsUpdate = true;
-      }
-    }
-
-    if (backTexture) {
-      backTexture.needsUpdate = true;
-    } else if (backCanvas) {
-      const tex = new THREE.CanvasTexture(backCanvas);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.minFilter = THREE.LinearFilter;
-      tex.magFilter = THREE.LinearFilter;
-      tex.needsUpdate = true;
-      setBackTexture(tex);
-      if (backMatRef.current) {
-        backMatRef.current.map = tex;
-        backMatRef.current.needsUpdate = true;
-      }
-    }
-  });
 
   const state = useRef({
     x: 0,
@@ -186,8 +153,10 @@ function LanyardPhysicsCard({
     s.x = e.point.x;
     s.y = e.point.y;
 
-    s.rotZ = -s.dragVelX * 2.2;
-    s.rotX = s.dragVelY * 2.2;
+    // Full 360 horizontal rotation (Y-axis spin) + vertical tilt
+    s.rotY += s.dragVelX * 2.4;
+    s.rotZ = -s.dragVelX * 0.8;
+    s.rotX = s.dragVelY * 1.5;
   };
 
   const handlePointerUp = (e: any) => {
@@ -198,11 +167,12 @@ function LanyardPhysicsCard({
 
     s.vx = s.dragVelX * 22;
     s.vy = s.dragVelY * 22;
-    s.vRotZ = -s.dragVelX * 30;
-    s.vRotY = s.dragVelX * 35;
-    s.vRotX = s.dragVelY * 25;
+    s.vRotY = s.dragVelX * 36;
+    s.vRotZ = -s.dragVelX * 20;
+    s.vRotX = s.dragVelY * 20;
   };
 
+  // Light, 60fps spring physics loop
   useFrame((_, delta) => {
     const s = state.current;
     const dt = Math.min(delta, 0.05);
@@ -234,7 +204,7 @@ function LanyardPhysicsCard({
       const targetRotX = (s.y - restY) * 0.4;
 
       const aRotX = -kRot * (s.rotX - targetRotX) - cRot * s.vRotX;
-      const aRotY = -kRot * s.rotY - cRot * s.vRotY;
+      const aRotY = -cRot * s.vRotY; // Smooth rotational damping for Y-axis spin
       const aRotZ = -kRot * (s.rotZ - targetRotZ) - cRot * s.vRotZ;
 
       s.vRotX += aRotX * dt;
@@ -246,8 +216,8 @@ function LanyardPhysicsCard({
       s.rotZ += s.vRotZ * dt;
 
       s.idleTimer += dt * 1.8;
-      if (Math.abs(s.vx) < 0.03 && Math.abs(s.vy) < 0.03) {
-        s.rotY += Math.sin(s.idleTimer) * 0.003;
+      if (Math.abs(s.vx) < 0.03 && Math.abs(s.vy) < 0.03 && Math.abs(s.vRotY) < 0.05) {
+        // Idle gentle sway
         s.rotZ += Math.cos(s.idleTimer * 0.7) * 0.002;
       }
     }
