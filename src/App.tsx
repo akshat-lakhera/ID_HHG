@@ -75,12 +75,6 @@ export function App() {
     pfpCanvasRef.current = c;
   }, []);
 
-  const getActiveCanvas = useCallback((): HTMLCanvasElement | null => {
-    if (format === 'pfp') return pfpCanvasRef.current;
-    if (cardSide === 'back') return backCanvas;
-    return frontCanvas || backCanvas || pfpCanvasRef.current;
-  }, [format, cardSide, frontCanvas, backCanvas]);
-
   const handleDownload = () => {
     soundHaptics.playSuccess();
     const name = sanitizeFilename(badgeData.name);
@@ -111,9 +105,9 @@ export function App() {
           window.setTimeout(() => {
             const backUrl = backCanvas.toDataURL('image/png', 1.0);
             downloadPng(backUrl, `HH-Goa-2026-BACK-${name}.png`);
-          }, 280);
+          }, 250);
         }
-        toast.success(frontCanvas && backCanvas ? 'Front and back downloaded' : 'Pass downloaded');
+        toast.success(frontCanvas && backCanvas ? 'Front and back passes downloaded' : 'Pass downloaded');
       }
       setShareModalOpen(true);
     } catch (err) {
@@ -125,26 +119,32 @@ export function App() {
   const handleShareToX = () => {
     soundHaptics.playClick();
     logger.log('info', 'App', 'ShareToXTriggered', { format });
-    const canvas = getActiveCanvas();
-    if (canvas) {
-      try {
-        const dataUrl = canvas.toDataURL('image/png', 1.0);
-        setExportedImageUrl(dataUrl);
-        const name = sanitizeFilename(badgeData.name);
-        downloadPng(
-          dataUrl,
-          `HH-Goa-2026-${format === 'pfp' ? 'Frame' : cardSide.toUpperCase()}-${name}.png`
-        );
-        canvas.toBlob((blob) => {
-          if (blob && navigator.clipboard?.write) {
-            navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]).catch(() => {
-              /* clipboard requires secure context / gesture */
-            });
-          }
-        }, 'image/png');
-      } catch {
-        toast.error('Could not prepare the image for sharing.');
+    const name = sanitizeFilename(badgeData.name);
+
+    try {
+      if (format === 'pfp') {
+        const canvas = pfpCanvasRef.current;
+        if (canvas) {
+          const dataUrl = canvas.toDataURL('image/png', 1.0);
+          setExportedImageUrl(dataUrl);
+          downloadPng(dataUrl, `HH-Goa-2026-Frame-${name}.png`);
+        }
+      } else {
+        if (frontCanvas) {
+          const frontUrl = frontCanvas.toDataURL('image/png', 1.0);
+          setExportedImageUrl(frontUrl);
+          downloadPng(frontUrl, `HH-Goa-2026-FRONT-${name}.png`);
+        }
+        if (backCanvas) {
+          window.setTimeout(() => {
+            const backUrl = backCanvas.toDataURL('image/png', 1.0);
+            downloadPng(backUrl, `HH-Goa-2026-BACK-${name}.png`);
+          }, 250);
+        }
       }
+    } catch (err) {
+      logger.log('error', 'App', 'ShareToXExportFailed', { error: String(err) });
+      toast.error('Could not prepare images for sharing.');
     }
 
     const tweetText = `Just made my official Hacker House Goa 2026 ${
