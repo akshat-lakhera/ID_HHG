@@ -10,11 +10,11 @@ interface HeaderProps {
 
 export function Header({ format, setFormat }: HeaderProps) {
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--ink)_78%,transparent)] backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--ink)_82%,transparent)] backdrop-blur-2xl shadow-xl">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3.5 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex items-center justify-between gap-4">
           <Logo compact />
-          <div className="hidden items-center gap-4 text-[11px] uppercase tracking-[0.18em] text-[var(--stone)] sm:flex">
+          <div className="hidden items-center gap-4 text-[11px] uppercase tracking-[0.18em] text-[var(--stone)] sm:flex font-mono">
             <span className="inline-flex items-center gap-1.5">
               <MapPin className="size-3 text-[var(--brass)]" />
               Anjuna, Goa

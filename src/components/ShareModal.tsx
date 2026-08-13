@@ -83,15 +83,15 @@ export function ShareModal({
   return (
     <Dialog.Root open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-[var(--ink)]/72 backdrop-blur-sm data-[state=open]:animate-[fadeIn_200ms_ease]" />
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-[var(--ink)]/80 backdrop-blur-md data-[state=open]:animate-[fadeIn_200ms_ease]" />
         <Dialog.Content
-          className="fixed top-1/2 left-1/2 z-50 w-[min(100%-1.5rem,32rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--line)] bg-[var(--surface)] p-6 shadow-[0_40px_80px_-32px_rgba(0,0,0,0.7)] focus:outline-none"
+          className="fixed top-1/2 left-1/2 z-50 w-[min(100%-1.5rem,32rem)] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[var(--line)] bg-[#0e3d22]/95 p-6 shadow-2xl focus:outline-none"
           onOpenAutoFocus={(e: Event) => e.preventDefault()}
         >
-          <Dialog.Title className="m-0 font-display text-2xl text-[var(--ivory)]">
+          <Dialog.Title className="m-0 font-display text-2xl text-[var(--ivory)] font-bold">
             Your {kind} is ready
           </Dialog.Title>
-          <Dialog.Description className="mt-1 mb-5 text-sm text-[var(--stone)]">
+          <Dialog.Description className="mt-1 mb-5 text-sm text-[var(--stone)] font-sans">
             Share with @247pmstudio · #HackerHouseGoa
           </Dialog.Description>
 
@@ -100,7 +100,7 @@ export function ShareModal({
               <img
                 src={imageUrl}
                 alt="Generated pass preview"
-                className="max-h-56 rounded-xl border border-[var(--line)] object-contain"
+                className="max-h-56 rounded-xl border border-[var(--line)] object-contain shadow-xl"
               />
             </div>
           )}
@@ -111,6 +111,7 @@ export function ShareModal({
               Open X
               <ExternalLink className="size-3.5 opacity-60" />
             </Button>
+
             <div className="grid grid-cols-2 gap-2.5">
               <Button variant="secondary" onClick={handleCopyImageToClipboard} disabled={!imageUrl}>
                 {copiedImage ? (
@@ -125,6 +126,7 @@ export function ShareModal({
                   </>
                 )}
               </Button>
+
               <Button variant="secondary" onClick={handleCopyCaption}>
                 {copiedText ? (
                   <>
@@ -141,7 +143,7 @@ export function ShareModal({
             </div>
           </div>
 
-          <p className="mt-4 mb-0 text-[11px] leading-relaxed text-[var(--muted)]">
+          <p className="mt-4 mb-0 text-[11px] leading-relaxed text-[var(--muted)] font-sans">
             On X, click the composer and paste with{' '}
             <kbd className="rounded border border-[var(--line)] bg-[var(--ink)] px-1.5 py-0.5 font-mono text-[var(--ivory)]">
               ⌘/Ctrl + V
@@ -153,7 +155,7 @@ export function ShareModal({
             <button
               type="button"
               aria-label="Close"
-              className="absolute top-4 right-4 grid size-8 place-items-center rounded-full text-[var(--stone)] transition-colors hover:bg-white/5 hover:text-[var(--ivory)]"
+              className="absolute top-4 right-4 grid size-8 place-items-center rounded-full text-[var(--stone)] transition-colors hover:bg-white/5 hover:text-[var(--ivory)] cursor-pointer"
             >
               ×
             </button>
